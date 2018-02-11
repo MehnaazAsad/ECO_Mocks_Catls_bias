@@ -1,0 +1,19 @@
+name: eco_mocks_catls
+
+channels:
+  - defaults
+
+dependencies:
+  - python>=3.6
+  - ipython
+  - anaconda
+  - astropy
+  - h5py
+  - numpy
+  - pandas>=0.22.0
+  - scipy
+  - seaborn
+  - pip
+  - pip:
+    - GitPython
+    - progressbar2

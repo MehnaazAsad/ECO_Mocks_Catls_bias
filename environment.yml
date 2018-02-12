@@ -2,6 +2,7 @@ name: eco_mocks_catls
 
 channels:
   - defaults
+  - conda-forge
 
 dependencies:
   - python>=3.6
@@ -19,3 +20,4 @@ dependencies:
     - progressbar2
     - hmf
     - CosmoloPy
+    - requests

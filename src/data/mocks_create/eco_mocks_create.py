@@ -49,6 +49,7 @@ import astropy.cosmology as astrocosmo
 import astropy.constants as ac
 import astropy.units     as u
 import astropy.table     as astro_table
+import requests
 
 
 ## Functions
@@ -99,6 +100,22 @@ def _check_pos_val(val, val_min=0):
         raise argparse.ArgumentTypeError(msg)
 
     return ival
+
+def url_checker(url_str):
+    """
+    Checks if the `url_str` is a valid URL
+
+    Parameters
+    ----------
+    url_str: string
+        url of the website to probe
+    """
+    request = requests.get(url_str)
+    if request.status_code != 200:
+        msg = '`url_str` ({0}) does not exist'.format(url_str)
+        raise ValueError(msg)
+    else:
+        pass
 
 def is_valid_file(parser, arg):
     """
@@ -166,6 +183,13 @@ def get_parser():
                         type=str,
                         choices=['A','B','ECO'],
                         default='ECO')
+    # Halo definition
+    parser.add_argument('-halotype',
+                        dest='halotype',
+                        help='Type of halo definition.',
+                        type=str,
+                        choices=['mvir','m200'],
+                        default='mvir')
     # Halobias file
     parser.add_argument('-hbfile',
                         dest='hbfile',
@@ -242,6 +266,13 @@ def add_to_dict(param_dict):
     param_dict: python dictionary
         dictionary with old and new values added
     """
+    ###
+    ### URL to download catalogues
+    url_catl = 'http://lss.phy.vanderbilt.edu/groups/data_eco_vc/'
+    url_checker(url_catl)
+    ##
+    ## Adding to `param_dict`
+    param_dict['url_catl'] = url_catl
 
     return param_dict
 
@@ -264,12 +295,13 @@ def directory_skeleton(param_dict, proj_dict):
         Dictionary with current and new paths to project directories
     """
     # Raw directory
-    raw_dir      = os.path.join( proj_dict['data_dir'],
+    raw_dir      = os.path.join(proj_dict['data_dir'],
                                 'raw')
     # Halobias Files
-    hb_files_dir = os.path.join(    raw_dir,
-                                    'hb_files',
-                                    param_dict['survey'])
+    hb_files_dir = os.path.join(raw_dir,
+                                'hb_files',
+                                param_dict['halotype'],
+                                param_dict['survey'])
     # Cosmological files
     cosmo_dir = os.path.join(   raw_dir,
                                 param_dict['cosmo_choice'],
@@ -284,15 +316,21 @@ def directory_skeleton(param_dict, proj_dict):
     # Conditional Luminosity Function (CLF)
     clf_dir      = os.path.join(int_dir,
                                 'CLF_HB',
+                                param_dict['halotype'],
                                 param_dict['survey'] + '/')
     # Halo Ngal
     h_ngal_dir   = os.path.join(int_dir,
                                 'HALO_NGAL_CLF',
+                                param_dict['halotype'],
                                 param_dict['survey'] + '/')
     ## Catalogues
     catl_outdir = os.path.join( proj_dict['data_dir'],
                                 'processed',
+                                param_dict['halotype'],
                                 param_dict['survey'])
+    ## Photometry files
+    phot_dir    = os.path.join( raw_dir,
+                                'surveys_phot_files')
     ## Creating output folders for the catalogues
     mock_cat_mgc     = os.path.join(catl_outdir, 'galaxy_catalogues')
     mock_cat_mc      = os.path.join(catl_outdir, 'member_galaxy_catalogues')
@@ -314,6 +352,7 @@ def directory_skeleton(param_dict, proj_dict):
     cu.Path_Folder(h_ngal_dir)
     cu.Path_Folder(raw_dir)
     cu.Path_Folder(hb_files_dir)
+    cu.Path_Folder(phot_dir)
     ##
     ## Adding to `proj_dict`
     proj_dict['cosmo_dir'       ] = cosmo_dir
@@ -329,6 +368,7 @@ def directory_skeleton(param_dict, proj_dict):
     proj_dict['h_ngal_dir'      ] = h_ngal_dir
     proj_dict['raw_dir'         ] = raw_dir
     proj_dict['hb_files_dir'    ] = hb_files_dir
+    proj_dict['phot_dir'        ] = phot_dir
 
     return proj_dict
 
@@ -450,6 +490,83 @@ def hmf_calc(cosmo_model, proj_dict, param_dict, Mmin=10, Mmax=16,
 
     return hmf_pd
 
+def download_files(param_dict, proj_dict):
+    """
+    Downloads the required files to a specific set of directories
+    
+    Parameters
+    ------------
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        dictionary with info of the project that uses the
+        `Data Science` Cookiecutter template.
+
+    """
+    ## Main ECO files directory - Web
+    resolve_web_dir = os.path.join( param_dict['url_catl'],
+                                    'RESOLVE',
+                                    'resolve_files')
+    eco_web_dir     = os.path.join( param_dict['url_catl'],
+                                    'ECO',
+                                    'eco_files')
+    ## ECO - MHI Predictions
+    mhi_file_local = os.path.join(  proj_dict['phot_dir'],
+                                    'eco_mhi_prediction.txt')
+    mhi_file_web   = os.path.join(  resolve_web_dir,
+                                    'eco_wresa_050815_Predicted_HI.txt')
+    ## ECO - Photometry file
+    eco_phot_file_local = os.path.join( proj_dict['phot_dir'],
+                                        'eco_wresa_050815.dat')
+    eco_phot_file_web   = os.path.join( resolve_web_dir,
+                                        'eco_wresa_050815.dat')
+    ## Resolve-B Photometry
+    res_b_phot_file_local = os.path.join(proj_dict['phot_dir'],
+                                        'resolvecatalog_str_2015_07_12.fits')
+    res_b_phot_file_web   = os.path.join(resolve_web_dir,
+                                        'resolvecatalog_str_2015_07_12.fits')
+    ## ECO-Resolve B Luminosity Function
+    eco_LF_file_local = os.path.join(   proj_dict['phot_dir'],
+                                        'eco_resolve_LF.csv')
+    eco_LF_file_web   = os.path.join(   resolve_web_dir,
+                                        'ECO_ResolveB_Lum_Function.csv')
+    ## ECO Luminosities
+    eco_lum_file_local = os.path.join(  proj_dict['phot_dir'],
+                                        'eco_dens_mag.csv')
+    eco_lum_file_web   = os.path.join(  eco_web_dir,
+                                        'Dens_Mag_Interp_ECO.ascii')
+    ## Halobias file
+    hb_file_local      = os.path.join(  proj_dict['hb_files_dir'],
+                                        'Resolve_plk_5001_so_{0}_hod1.ff'.format(
+                                            param_dict['halotype']))
+    hb_file_web        = os.path.join(  param_dict['url_catl'],
+                                        'HB_files',
+                                        param_dict['halotype'],
+                                        'Resolve_plk_5001_so_{0}_hod1.ff'.format(
+                                            param_dict['halotype']))
+    ##
+    ## Downloading files
+    files_local_arr = [ mhi_file_local       , eco_phot_file_local,
+                        res_b_phot_file_local, eco_LF_file_local  , 
+                        eco_lum_file_local   , hb_file_local      ]
+    files_web_arr   = [ mhi_file_web         , eco_phot_file_web  ,
+                        res_b_phot_file_web  , eco_LF_file_web    ,
+                        eco_lum_file_web     , hb_file_web        ]
+    ## Checking that files exist
+    for (local_ii, web_ii) in zip(files_local_arr,files_web_arr):
+        ## Downloading file if not in `local`
+        if not os.path.exists(local_ii):
+            ## Checking for `web` file
+            url_checker(web_ii)
+            ## Downloading
+            cu.File_Download_needed(local_ii, web_ii)
+            assert(os.path.exists(local_ii))
+    ##
+    ## Showing stored files
+    print('{0} Downloaded all necessary files!'.format(param_dict['Prog_msg']))
+
+
 ## -----------| Survey-related functions |----------- ##
 
 def survey_specs(param_dict):
@@ -520,6 +637,9 @@ def main(args):
     ## Mass function for given cosmology
     hmf_pd = hmf_calc(cosmo_model, proj_dict, param_dict, Mmin=6., Mmax=16.01,
         dlog10m=1.e-3, hmf_model=param_dict['hmf_model'])
+    ##
+    ## Downloading files
+    download_files(param_dict, proj_dict)
 
 
 

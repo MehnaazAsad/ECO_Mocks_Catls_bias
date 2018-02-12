@@ -181,7 +181,7 @@ def get_parser():
                         choices=['Planck','LasDamas'])
     # Halomass function
     parser.add_argument('-hmf',
-                        dest='hmf_choice',
+                        dest='hmf_model',
                         help='Halo Mass Function choice',
                         type=str,
                         default='warren',
@@ -377,8 +377,8 @@ def cosmo_create(cosmo_choice='Planck', H0=100., Om0=0.25, Ob0=0.04,
     return cosmo_model, cosmo_hmf
 
 def hmf_calc(cosmo_model, proj_dict, param_dict, Mmin=10, Mmax=16, 
-    dlog10m=1e-3, hmf_model='warren', remove_file=True, ext='csv',
-    sep=',', Prog_msg='1 >>   '):
+    dlog10m=1e-3, hmf_model='warren', ext='csv', sep=',', 
+    Prog_msg='1 >>   '):
     # Prog_msg=cu.Program_Msg(__file__)):
     """
     Creates file with the desired mass function
@@ -405,9 +405,6 @@ def hmf_calc(cosmo_model, proj_dict, param_dict, Mmin=10, Mmax=16,
         Options:
             - 'warren': Uses Warren et al. (2006) HMF
             = 'tinker08': Uses Tinker et al. (2008) HMF
-    
-    remove_file: boolean, optional (default = False)
-        option to delete file if it exists
 
     ext: string, optional (default = 'csv')
         extension of output file
@@ -428,7 +425,7 @@ def hmf_calc(cosmo_model, proj_dict, param_dict, Mmin=10, Mmax=16,
                                     cosmo_model.H0.value,
                                     hmf_model,
                                     ext))
-    if os.path.exists(hmf_outfile):
+    if (os.path.exists(hmf_outfile)) and (param_dict['remove_files']):
         # Removing file
         os.remove(hmf_outfile)
     ## Check if file exists
@@ -527,7 +524,7 @@ def main(args):
     ##
     ## Mass function for given cosmology
     hmf_pd = hmf_calc(cosmo_model, proj_dict, param_dict, Mmin=6., Mmax=16.01,
-        dlog10m=1.e-3, hmf_choice=param_dict['hmf_choice'])
+        dlog10m=1.e-3, hmf_model=param_dict['hmf_model'])
 
 
 

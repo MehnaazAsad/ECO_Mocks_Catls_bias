@@ -376,6 +376,88 @@ def cosmo_create(cosmo_choice='Planck', H0=100., Om0=0.25, Ob0=0.04,
 
     return cosmo_model, cosmo_hmf
 
+def hmf_calc(cosmo_model, proj_dict, param_dict, Mmin=10, Mmax=16, 
+    dlog10m=1e-3, hmf_model='warren', remove_file=True, ext='csv',
+    sep=',', Prog_msg='1 >>   '):
+    # Prog_msg=cu.Program_Msg(__file__)):
+    """
+    Creates file with the desired mass function
+
+    Parameters
+    ----------
+    cosmo_obj: astropy cosmology object
+        cosmology used throughout the project
+
+    hmf_out: string
+        path to the output file for the halo mass function
+
+    Mmin: float, optional (default = 10)
+        minimum halo mass to evaluate
+
+    Mmax: float, optional (default = 15)
+        maximum halo mass to evaluate
+
+    dlog10m: float, optional (default = 1e-2)
+
+
+    hmf_model: string, optional (default = 'warren')
+        Halo Mass Function choice
+        Options:
+            - 'warren': Uses Warren et al. (2006) HMF
+            = 'tinker08': Uses Tinker et al. (2008) HMF
+    
+    remove_file: boolean, optional (default = False)
+        option to delete file if it exists
+
+    ext: string, optional (default = 'csv')
+        extension of output file
+
+    sep: string, optional (default = ',')
+        delimiter used for reading/writing the file
+
+    Returns
+    ----------
+    hmf_pd: pandas DataFrame
+        DataFrame of `log10 masses` and `cumulative number densities` for 
+        halos of mass > M.
+    """
+    ## HMF Output file
+    hmf_outfile = os.path.join( proj_dict['mf_dir'],
+                                '{0}_H0_{1}_HMF_{2}.{3}'.format(
+                                    param_dict['cosmo_choice'],
+                                    cosmo_model.H0.value,
+                                    hmf_model,
+                                    ext))
+    if os.path.exists(hmf_outfile):
+        # Removing file
+        os.remove(hmf_outfile)
+    ## Check if file exists
+    if not os.path.exists(hmf_outfile):
+        ## Halo mass function - Fitting function
+        if hmf_model == 'warren':
+            hmf_choice_fit = hmf.fitting_functions.Warren
+        elif hmf_model == 'tinker08':
+            hmf_choice_fit = hmf.fitting_functions.Tinker08
+        else:
+            msg = '{0} hmf_model `{1}` not supported! Exiting'.format(
+                Prog_msg, hmf_model)
+            raise ValueError(msg)
+        # Calculating HMF
+        mass_func = hmf.MassFunction(Mmin=Mmin, Mmax=Mmax, dlog10m=dlog10m,
+            cosmo_model=cosmo_model, hmf_model=hmf_choice_fit)
+        ## Log10(Mass) and cumulative number density of haloes
+        # HMF Pandas DataFrame
+        hmf_pd = pd.DataFrame({ 'logM':num.log10(mass_func.m), 
+                                'ngtm':mass_func.ngtm})
+        # Saving to output file
+        hmf_pd.to_csv(hmf_outfile, sep=sep, index=False,
+            columns=['logM','ngtm'])
+    else:
+        ## Reading output file
+        hmf_pd = pd.read_csv(hmf_outfile, sep=sep)
+
+    return hmf_pd
+
 ## -----------| Survey-related functions |----------- ##
 
 def survey_specs(param_dict):
@@ -442,6 +524,10 @@ def main(args):
     ##
     ## Cosmological model and Halo mass function
     cosmo_model, cosmo_hmf = cosmo_create(param_dict['cosmo_choice'])
+    ##
+    ## Mass function for given cosmology
+    hmf_pd = hmf_calc(cosmo_model, proj_dict, param_dict, Mmin=6., Mmax=16.01,
+        dlog10m=1.e-3, hmf_choice=param_dict['hmf_choice'])
 
 
 

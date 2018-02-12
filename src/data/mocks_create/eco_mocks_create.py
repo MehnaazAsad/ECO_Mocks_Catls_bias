@@ -425,33 +425,28 @@ def hmf_calc(cosmo_model, proj_dict, param_dict, Mmin=10, Mmax=16,
                                     cosmo_model.H0.value,
                                     hmf_model,
                                     ext))
-    if (os.path.exists(hmf_outfile)) and (param_dict['remove_files']):
+    if os.path.exists(hmf_outfile):
         # Removing file
         os.remove(hmf_outfile)
-    ## Check if file exists
-    if not os.path.exists(hmf_outfile):
-        ## Halo mass function - Fitting function
-        if hmf_model == 'warren':
-            hmf_choice_fit = hmf.fitting_functions.Warren
-        elif hmf_model == 'tinker08':
-            hmf_choice_fit = hmf.fitting_functions.Tinker08
-        else:
-            msg = '{0} hmf_model `{1}` not supported! Exiting'.format(
-                Prog_msg, hmf_model)
-            raise ValueError(msg)
-        # Calculating HMF
-        mass_func = hmf.MassFunction(Mmin=Mmin, Mmax=Mmax, dlog10m=dlog10m,
-            cosmo_model=cosmo_model, hmf_model=hmf_choice_fit)
-        ## Log10(Mass) and cumulative number density of haloes
-        # HMF Pandas DataFrame
-        hmf_pd = pd.DataFrame({ 'logM':num.log10(mass_func.m), 
-                                'ngtm':mass_func.ngtm})
-        # Saving to output file
-        hmf_pd.to_csv(hmf_outfile, sep=sep, index=False,
-            columns=['logM','ngtm'])
+    ## Halo mass function - Fitting function
+    if hmf_model == 'warren':
+        hmf_choice_fit = hmf.fitting_functions.Warren
+    elif hmf_model == 'tinker08':
+        hmf_choice_fit = hmf.fitting_functions.Tinker08
     else:
-        ## Reading output file
-        hmf_pd = pd.read_csv(hmf_outfile, sep=sep)
+        msg = '{0} hmf_model `{1}` not supported! Exiting'.format(
+            Prog_msg, hmf_model)
+        raise ValueError(msg)
+    # Calculating HMF
+    mass_func = hmf.MassFunction(Mmin=Mmin, Mmax=Mmax, dlog10m=dlog10m,
+        cosmo_model=cosmo_model, hmf_model=hmf_choice_fit)
+    ## Log10(Mass) and cumulative number density of haloes
+    # HMF Pandas DataFrame
+    hmf_pd = pd.DataFrame({ 'logM':num.log10(mass_func.m), 
+                            'ngtm':mass_func.ngtm})
+    # Saving to output file
+    hmf_pd.to_csv(hmf_outfile, sep=sep, index=False,
+        columns=['logM','ngtm'])
 
     return hmf_pd
 

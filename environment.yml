@@ -18,3 +18,4 @@ dependencies:
     - GitPython
     - progressbar2
     - hmf
+    - CosmoloPy

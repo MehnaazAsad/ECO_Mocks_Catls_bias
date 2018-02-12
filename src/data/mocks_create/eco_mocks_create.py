@@ -44,8 +44,17 @@ from progressbar import (Bar, ETA, FileTransferSpeed, Percentage, ProgressBar,
 from argparse import ArgumentParser
 from argparse import HelpFormatter
 from operator import attrgetter
+import hmf
+import astropy.cosmology as astrocosmo
+import astropy.constants as ac
+import astropy.units     as u
+import astropy.table     as astro_table
+
 
 ## Functions
+
+## -----------| Reading input arguments |----------- ##
+
 class SortingHelpFormatter(HelpFormatter):
     def add_arguments(self, actions):
         """
@@ -219,40 +228,6 @@ def param_vals_test(param_dict):
     ##
     ## This is where the tests for `param_dict` input parameters go.
 
-def survey_specs(param_dict):
-    """
-    Provides the specifications of the survey being created
-
-    Parameters
-    ----------
-    param_dict: python dictionary
-        dictionary with `project` variables
-
-    Returns
-    ----------
-    param_dict: python dictionary
-        dictionary with the 'updated' project variables
-    """
-    if param_dict['servey'] == 'A':
-        czmin      = 2532.
-        czmax      = 7470.
-        survey_vol = 20957.7789388
-    elif param_dict['survey'] == 'B':
-        czmin      = 4250.
-        czmax      = 7250.
-        survey_vol = 15908.063125
-    elif param_dict['survey'] == 'ECO':
-        czmin      = 2532.
-        czmax      = 7470.
-        survey_vol = 192294.221932
-
-    ## Saving to `param_dict`
-    param_dict['czmin'     ] = czmin
-    param_dict['czmax'     ] = czmax
-    param_dict['survey_vol'] = survey_vol
-
-    return param_dict
-
 def add_to_dict(param_dict):
     """
     Aggregates extra variables to dictionary
@@ -357,11 +332,89 @@ def directory_skeleton(param_dict, proj_dict):
 
     return proj_dict
 
+## -----------| Survey-related functions |----------- ##
 
+def cosmo_create(cosmo_choice='Planck', H0=100., Om0=0.25, Ob0=0.04,
+    Tcmb0=2.7255):
+    """
+    Creates instance of the cosmology used throughout the project.
 
+    Parameters
+    ----------
+    cosmo_choice: string, optional (default = 'Planck')
+        choice of cosmology
+        Options:
+            - Planck: Cosmology from Planck 2015
+            - LasDamas: Cosmology from LasDamas simulation
 
-    return proj_dict
+    h: float, optional (default = 1.0)
+        value for small cosmological 'h'.
 
+    Returns
+    ----------                  
+    cosmo_obj: astropy cosmology object
+        cosmology used throughout the project
+    """
+    ## Checking cosmology choices
+    cosmo_choice_arr = ['Planck', 'LasDamas']
+    assert(cosmo_choice in cosmo_choice_arr)
+    ## Choosing cosmology
+    if cosmo_choice == 'Planck':
+        cosmo_model = astrocosmo.Planck15.clone(H0=H0)
+    elif cosmo_choice == 'LasDamas':
+        cosmo_model = astrocosmo.FlatLambdaCDM(H0=H0, Om0=Om0, Ob0=Ob0, 
+            Tcmb0=Tcmb0)
+    ## Cosmo Paramters
+    cosmo_params         = {}
+    cosmo_params['H0'  ] = cosmo_model.H0.value
+    cosmo_params['Om0' ] = cosmo_model.Om0
+    cosmo_params['Ob0' ] = cosmo_model.Ob0
+    cosmo_params['Ode0'] = cosmo_model.Ode0
+    cosmo_params['Ok0' ] = cosmo_model.Ok0
+    ## HMF Cosmo Model
+    cosmo_hmf = hmf.cosmo.Cosmology(cosmo_model=cosmo_model)
+
+    return cosmo_model, cosmo_hmf
+
+## -----------| Survey-related functions |----------- ##
+
+def survey_specs(param_dict):
+    """
+    Provides the specifications of the survey being created
+
+    Parameters
+    ----------
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    Returns
+    ----------
+    param_dict: python dictionary
+        dictionary with the 'updated' project variables
+    """
+    if param_dict['servey'] == 'A':
+        czmin      = 2532.
+        czmax      = 7470.
+        survey_vol = 20957.7789388
+    elif param_dict['survey'] == 'B':
+        czmin      = 4250.
+        czmax      = 7250.
+        survey_vol = 15908.063125
+    elif param_dict['survey'] == 'ECO':
+        czmin      = 2532.
+        czmax      = 7470.
+        survey_vol = 192294.221932
+
+    ## Saving to `param_dict`
+    param_dict['czmin'     ] = czmin
+    param_dict['czmax'     ] = czmax
+    param_dict['survey_vol'] = survey_vol
+
+    return param_dict
+
+## -----------| Halobias-related functions |----------- ##
+
+# def hb_file_construction_extras(hb_file, )
 
 def main(args):
     """
@@ -386,6 +439,10 @@ def main(args):
         if key !='Prog_msg':
             print('{0} `{1}`: {2}'.format(Prog_msg, key, key_val))
     print('\n'+50*'='+'\n')
+    ##
+    ## Cosmological model and Halo mass function
+    cosmo_model, cosmo_hmf = cosmo_create(param_dict['cosmo_choice'])
+
 
 
 # Main function

@@ -50,6 +50,7 @@ import astropy.constants as ac
 import astropy.units     as u
 import astropy.table     as astro_table
 import requests
+from collections import Counter
 
 
 ## Functions
@@ -671,7 +672,67 @@ def survey_specs(param_dict):
 
 ## -----------| Halobias-related functions |----------- ##
 
-# def hb_file_construction_extras(hb_file, )
+def hb_file_construction_extras(param_dict, proj_dict):
+    """
+    Parameters
+    ----------
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        dictionary with info of the project that uses the
+        `Data Science` Cookiecutter template.
+
+    Returns
+    ---------
+    param_dict: python dictionary
+        dictionary with updated 'hb_file_mod' key, which is the 
+        path to the file with number of galaxies per halo ID.
+    """
+    Prog_msg = param_dict['Prog_msg']
+    ## Local halobias file
+    hb_local = param_dict['files_dict']['hb_file_local']
+    ## HaloID extras file
+    hb_file_mod = os.path.join(proj_dict['h_ngal_dir'],
+                                    os.path.basename(hb_local)+'.halongal')
+    ## Reading in file
+    print('{0} Reading in `hb_file`...'.format(Prog_msg))
+    with open(hb_local,'rb') as hb:
+        idat    = cu.fast_food_reader('int'  , 5, hb)
+        fdat    = cu.fast_food_reader('float', 9, hb)
+        znow    = cu.fast_food_reader('float', 1, hb)[0]
+        ngal    = int(idat[1])
+        lbox    = int(fdat[0])
+        x_arr   = cu.fast_food_reader('float' , ngal, hb)
+        y_arr   = cu.fast_food_reader('float' , ngal, hb)
+        z_arr   = cu.fast_food_reader('float' , ngal, hb)
+        vx_arr  = cu.fast_food_reader('float' , ngal, hb)
+        vy_arr  = cu.fast_food_reader('float' , ngal, hb)
+        vz_arr  = cu.fast_food_reader('float' , ngal, hb)
+        halom   = cu.fast_food_reader('float' , ngal, hb)
+        cs_flag = cu.fast_food_reader('int'   , ngal, hb)
+        haloid  = cu.fast_food_reader('int'   , ngal, hb)
+    ##
+    ## Counter of HaloIDs
+    haloid_counts = Counter(haloid)
+    # Array of `gals` in each `haloid`
+    haloid_ngal = [[] for x in range(ngal)]
+    for kk, halo_kk in enumerate(haloid):
+        haloid_ngal[kk] = haloid_counts[halo_kk]
+    haloid_ngal = num.asarray(haloid_ngal).astype(int)
+    # Saving to file
+    with open(hb_file_mod,'wb') as hb_ngal:
+        num.savetxt(hb_ngal, haloid_ngal, fmt='%d')
+    cu.File_Exists(hb_file_mod)
+    ## Assigning to `param_dict`
+    param_dict['hb_file_mod'] = hb_file_mod
+    # Message
+    print('\n{0} Halo_ngal file: {1}'.format(Prog_msg, hb_file_mod))
+    print('{0} Creating file with Ngals in each halo ... Complete'.format(Prog_msg))
+
+    return param_dict
+
+## -----------| Main functions |----------- ##
 
 def main(args):
     """
@@ -709,6 +770,9 @@ def main(args):
     ##
     ## Redshift and Comoving distance
     z_como_pd = z_comoving_calc(param_dict, proj_dict, cosmo_model)
+    ## Halobias Extras file
+    param_dict = hb_file_construction_extras(param_dict, proj_dict)
+
 
 
 

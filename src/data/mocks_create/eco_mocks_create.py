@@ -425,7 +425,7 @@ def hmf_calc(cosmo_model, proj_dict, param_dict, Mmin=10, Mmax=16,
 
     Parameters
     ----------
-    cosmo_obj: astropy cosmology object
+    cosmo_model: astropy cosmology object
         cosmology used throughout the project
 
     hmf_out: string
@@ -503,6 +503,11 @@ def download_files(param_dict, proj_dict):
         dictionary with info of the project that uses the
         `Data Science` Cookiecutter template.
 
+    Returns
+    ------------
+    param_dict: python dictionary
+        dictionary with the updated paths to the local files that were 
+        just downloaded
     """
     ## Main ECO files directory - Web
     resolve_web_dir = os.path.join( param_dict['url_catl'],
@@ -563,8 +568,69 @@ def download_files(param_dict, proj_dict):
             cu.File_Download_needed(local_ii, web_ii)
             assert(os.path.exists(local_ii))
     ##
+    ## Saving paths to `param_dict'
+    files_dict = {}
+    files_dict['mhi_file_local'       ] = mhi_file_local
+    files_dict['eco_phot_file_local'  ] = eco_phot_file_local
+    files_dict['res_b_phot_file_local'] = res_b_phot_file_local
+    files_dict['eco_LF_file_local'    ] = eco_LF_file_local
+    files_dict['eco_lum_file_local'   ] = eco_lum_file_local
+    files_dict['hb_file_local'        ] = hb_file_local
+    # To `param_dict'
+    param_dict['files_dict'] = files_dict
+    ##
     ## Showing stored files
     print('{0} Downloaded all necessary files!'.format(param_dict['Prog_msg']))
+
+    return param_dict
+
+def z_comoving_calc(param_dict, proj_dict, cosmo_model, 
+    zmin=0, zmax=0.5, dz=1e-3, ext='csv', sep=','):
+    """
+    Computes the comoving distance of an object based on its redshift
+    
+    Parameters
+    ------------
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        dictionary with info of the project that uses the
+        `Data Science` Cookiecutter template.
+
+    cosmo_model: astropy cosmology object
+        cosmology used throughout the project
+
+    Returns
+    ------------
+    z_como_pd: pandas DataFrame
+        DataFrame with `z, d_comoving` in units of Mpc
+    """
+    ## File
+    z_comoving_file = os.path.join( proj_dict['cosmo_dir'],
+                                    '{0}_H0_{1}_z_comoving.{2}'.format(
+                                        param_dict['cosmo_choice'],
+                                        cosmo_model.H0.value,
+                                        ext))
+    if (os.path.exists(z_comoving_file)) and (param_dict['remove_files']):
+        ## Removing file
+        os.remove(z_comoving_file)
+    if not os.path.exists(z_comoving_file):
+        ## Calculating comoving distance
+        # `z_arr`     : Unitless
+        # `d_comoving`:
+        z_arr     = num.arange(zmin, zmax, dz)
+        d_como    = cosmo_model.comoving_distance(z_arr).to(u.Mpc)
+        z_como_pd = pd.DataFrame({'z':z_arr, 'd_como':d_como.value})
+        ## Saving to file
+        z_como_pd.to_csv(z_comoving_file, sep=sep, index=False)
+        cu.File_Exists(z_comoving_file)
+    else:
+        z_como_pd = pd.read_csv(z_comoving_file, sep=sep)
+
+    return z_como_pd
+
+
 
 
 ## -----------| Survey-related functions |----------- ##
@@ -639,7 +705,10 @@ def main(args):
         dlog10m=1.e-3, hmf_model=param_dict['hmf_model'])
     ##
     ## Downloading files
-    download_files(param_dict, proj_dict)
+    param_dict = download_files(param_dict, proj_dict)
+    ##
+    ## Redshift and Comoving distance
+    z_como_pd = z_comoving_calc(param_dict, proj_dict, cosmo_model)
 
 
 

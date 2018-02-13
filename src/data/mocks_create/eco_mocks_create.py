@@ -704,6 +704,9 @@ def hb_file_construction_extras(param_dict, proj_dict):
     param_dict: python dictionary
         dictionary with updated 'hb_file_mod' key, which is the 
         path to the file with number of galaxies per halo ID.
+
+    hb_pd: pandas DataFrame
+        pandas DataFrame with information from the Halobias file `hb_local`
     """
     Prog_msg = param_dict['Prog_msg']
     ## Local halobias file
@@ -728,6 +731,20 @@ def hb_file_construction_extras(param_dict, proj_dict):
         halom   = cu.fast_food_reader('float' , ngal, hb)
         cs_flag = cu.fast_food_reader('int'   , ngal, hb)
         haloid  = cu.fast_food_reader('int'   , ngal, hb)
+    ## Converting to Pandas DataFrame
+    # Dictionary
+    hb_dict = {}
+    hb_dict['x'      ] = x_arr
+    hb_dict['y'      ] = y_arr
+    hb_dict['z'      ] = z_arr
+    hb_dict['vx'     ] = vx_arr
+    hb_dict['vy'     ] = vy_arr
+    hb_dict['vz'     ] = vz_arr
+    hb_dict['halom'  ] = halom
+    hb_dict['cs_flag'] = cs_flag
+    hb_dict['haloid' ] = haloid
+    # To DataFrame
+    hb_pd = pd.DataFrame(hb_dict)
     ##
     ## Counter of HaloIDs
     haloid_counts = Counter(haloid)
@@ -746,7 +763,7 @@ def hb_file_construction_extras(param_dict, proj_dict):
     print('\n{0} Halo_ngal file: {1}'.format(Prog_msg, hb_file_mod))
     print('{0} Creating file with Ngals in each halo ... Complete'.format(Prog_msg))
 
-    return param_dict
+    return param_dict, hb_pd
 
 def hb_file_create(param_dict, proj_dict, ext='txt'):
     """
@@ -763,8 +780,10 @@ def hb_file_create(param_dict, proj_dict, ext='txt'):
 
     ext: string, optional (default = 'txt')
         extension of the output file
-    """ 
-    
+    """
+    ## Halobias modified version file
+    hb_file_mod = os.path.join()
+
 
 
 
@@ -834,7 +853,8 @@ def main(args):
     ## Redshift and Comoving distance
     z_como_pd = z_comoving_calc(param_dict, proj_dict, cosmo_model)
     ## Halobias Extras file
-    param_dict = hb_file_construction_extras(param_dict, proj_dict)
+    (   param_dict,
+        hb_pd     ) = hb_file_construction_extras(param_dict, proj_dict)
     ## Creating modified version of Halobias file
     hb_file_create(param_dict, proj_dict)
     ## Conditional Luminosity Function

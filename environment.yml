@@ -20,4 +20,4 @@ dependencies:
     - progressbar2
     - hmf
     - CosmoloPy
-    - requests
+    - requests 

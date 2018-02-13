@@ -211,6 +211,13 @@ def get_parser():
                         type=str,
                         default='warren',
                         choices=['warren','tinker08'])
+    ## CLF Choice
+    parser.add_argument('-clf',
+                        dest='clf_type',
+                        help='Type of CLF to choose. 1) Cacciato, 2) LasDamas Best-fit',
+                        type=int,
+                        choices=[1,2],
+                        default=2)
     ## Random Seed
     parser.add_argument('-seed',
                         dest='seed',
@@ -267,13 +274,25 @@ def add_to_dict(param_dict):
     param_dict: python dictionary
         dictionary with old and new values added
     """
+    ## HOD Parameters
+    hod_dict             = {}
+    hod_dict['logMmin' ] = 11.4
+    hod_dict['sigLogM' ] = 0.2
+    hod_dict['logM0'   ] = 10.8
+    hod_dict['logM1'   ] = 12.8
+    hod_dict['alpha'   ] = 1.05
+    hod_dict['zmed_val'] = 'z0p000'
+    ## Choice of Survey
+    choice_survey = 2
     ###
     ### URL to download catalogues
     url_catl = 'http://lss.phy.vanderbilt.edu/groups/data_eco_vc/'
     url_checker(url_catl)
     ##
     ## Adding to `param_dict`
-    param_dict['url_catl'] = url_catl
+    param_dict['url_catl'     ] = url_catl
+    param_dict['hod_dict'     ] = hod_dict
+    param_dict['choice_survey'] = choice_survey
 
     return param_dict
 
@@ -621,8 +640,8 @@ def z_comoving_calc(param_dict, proj_dict, cosmo_model,
         # `z_arr`     : Unitless
         # `d_comoving`:
         z_arr     = num.arange(zmin, zmax, dz)
-        d_como    = cosmo_model.comoving_distance(z_arr).to(u.Mpc)
-        z_como_pd = pd.DataFrame({'z':z_arr, 'd_como':d_como.value})
+        d_como    = cosmo_model.comoving_distance(z_arr).to(u.Mpc).value
+        z_como_pd = pd.DataFrame({'z':z_arr, 'd_como':d_como})
         ## Saving to file
         z_como_pd.to_csv(z_comoving_file, sep=sep, index=False)
         cu.File_Exists(z_comoving_file)
@@ -630,9 +649,6 @@ def z_comoving_calc(param_dict, proj_dict, cosmo_model,
         z_como_pd = pd.read_csv(z_comoving_file, sep=sep)
 
     return z_como_pd
-
-
-
 
 ## -----------| Survey-related functions |----------- ##
 
@@ -732,6 +748,53 @@ def hb_file_construction_extras(param_dict, proj_dict):
 
     return param_dict
 
+def hb_file_create(param_dict, proj_dict, ext='txt'):
+    """
+    Creates a modified version of the Halobias file
+
+    Parameters
+    ----------
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        dictionary with info of the project that uses the
+        `Data Science` Cookiecutter template.
+
+    ext: string, optional (default = 'txt')
+        extension of the output file
+    """ 
+    
+
+
+
+def clf_assignment(param_dict, proj_dict):
+    """
+    Computes the conditional luminosity function on the halobias file
+    
+    Parameters
+    ----------
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        dictionary with info of the project that uses the
+        `Data Science` Cookiecutter template.
+    """
+    ## HOD dictionary
+    hod_dict = param_dict['hod_dict']
+    ## CLF Executable
+    clf_exe = os.path.join( cu.get_code_c(),
+                            'CLF',
+                            'CLF_with_ftread')
+    cu.File_Exists(clf_exe)
+    ## CLF Commands
+    cmd_arr = [clf_exe, hod_dict['logMmin'], ]
+
+
+
+
+
 ## -----------| Main functions |----------- ##
 
 def main(args):
@@ -772,6 +835,10 @@ def main(args):
     z_como_pd = z_comoving_calc(param_dict, proj_dict, cosmo_model)
     ## Halobias Extras file
     param_dict = hb_file_construction_extras(param_dict, proj_dict)
+    ## Creating modified version of Halobias file
+    hb_file_create(param_dict, proj_dict)
+    ## Conditional Luminosity Function
+
 
 
 

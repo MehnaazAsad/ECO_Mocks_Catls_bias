@@ -739,10 +739,6 @@ def hb_file_construction_extras(param_dict, proj_dict):
     for kk, halo_kk in enumerate(haloid):
         haloid_ngal[kk] = haloid_counts[halo_kk]
     haloid_ngal = num.asarray(haloid_ngal).astype(int)
-    # Saving to file
-    with open(hb_file_mod,'wb') as hb_ngal:
-        num.savetxt(hb_ngal, haloid_ngal, fmt='%d')
-    cu.File_Exists(hb_file_mod)
     ## Converting to Pandas DataFrame
     # Dictionary
     hb_dict = {}
@@ -761,6 +757,9 @@ def hb_file_construction_extras(param_dict, proj_dict):
     hb_cols = ['x','y','z','vx','vy','vz','halom','loghalom',
                 'cs_flag','haloid','haloid_ngal']
     hb_pd   = pd.DataFrame(hb_dict)[hb_cols]
+    ## Saving to file
+    hb_pd.to_csv(hb_file_mod, sep=" ", columns=hb_cols, 
+        index=False, header=False)
     ## Assigning to `param_dict`
     param_dict['hb_file_mod'] = hb_file_mod
     param_dict['hb_cols'    ] = hb_cols

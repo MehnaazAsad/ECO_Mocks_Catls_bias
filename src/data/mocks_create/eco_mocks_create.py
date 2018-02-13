@@ -744,7 +744,8 @@ def hb_file_construction_extras(param_dict, proj_dict):
     hb_dict['cs_flag'] = cs_flag
     hb_dict['haloid' ] = haloid
     # To DataFrame
-    hb_pd = pd.DataFrame(hb_dict)
+    hb_cols = ['x','y','z','vx','vy','vz','halom','cs_flag','haloid']
+    hb_pd   = pd.DataFrame(hb_dict)[hb_cols]
     ##
     ## Counter of HaloIDs
     haloid_counts = Counter(haloid)
@@ -759,13 +760,14 @@ def hb_file_construction_extras(param_dict, proj_dict):
     cu.File_Exists(hb_file_mod)
     ## Assigning to `param_dict`
     param_dict['hb_file_mod'] = hb_file_mod
+    param_dict['hb_cols'    ] = hb_cols
     # Message
     print('\n{0} Halo_ngal file: {1}'.format(Prog_msg, hb_file_mod))
     print('{0} Creating file with Ngals in each halo ... Complete'.format(Prog_msg))
 
     return param_dict, hb_pd
 
-def hb_file_create(param_dict, proj_dict, ext='txt'):
+def hb_file_create(param_dict, proj_dict, hb_pd, ext='txt'):
     """
     Creates a modified version of the Halobias file
 
@@ -781,8 +783,11 @@ def hb_file_create(param_dict, proj_dict, ext='txt'):
     ext: string, optional (default = 'txt')
         extension of the output file
     """
+    ## Local halobias file
+    hb_local    = param_dict['files_dict']['hb_file_local']
     ## Halobias modified version file
-    hb_file_mod = os.path.join()
+    hb_file_mod = os.path.join( proj_dict['hb_files_dir'],
+                                os.path.basename(hb_local)+'.mod')
 
 
 

@@ -712,8 +712,8 @@ def hb_file_construction_extras(param_dict, proj_dict):
     ## Local halobias file
     hb_local = param_dict['files_dict']['hb_file_local']
     ## HaloID extras file
-    hb_file_mod = os.path.join(proj_dict['h_ngal_dir'],
-                                    os.path.basename(hb_local)+'.halongal')
+    hb_file_mod = os.path.join(proj_dict['hb_files_dir'],
+                                    os.path.basename(hb_local)+'.mod')
     ## Reading in file
     print('{0} Reading in `hb_file`...'.format(Prog_msg))
     with open(hb_local,'rb') as hb:
@@ -731,21 +731,6 @@ def hb_file_construction_extras(param_dict, proj_dict):
         halom   = cu.fast_food_reader('float' , ngal, hb)
         cs_flag = cu.fast_food_reader('int'   , ngal, hb)
         haloid  = cu.fast_food_reader('int'   , ngal, hb)
-    ## Converting to Pandas DataFrame
-    # Dictionary
-    hb_dict = {}
-    hb_dict['x'      ] = x_arr
-    hb_dict['y'      ] = y_arr
-    hb_dict['z'      ] = z_arr
-    hb_dict['vx'     ] = vx_arr
-    hb_dict['vy'     ] = vy_arr
-    hb_dict['vz'     ] = vz_arr
-    hb_dict['halom'  ] = halom
-    hb_dict['cs_flag'] = cs_flag
-    hb_dict['haloid' ] = haloid
-    # To DataFrame
-    hb_cols = ['x','y','z','vx','vy','vz','halom','cs_flag','haloid']
-    hb_pd   = pd.DataFrame(hb_dict)[hb_cols]
     ##
     ## Counter of HaloIDs
     haloid_counts = Counter(haloid)
@@ -758,6 +743,24 @@ def hb_file_construction_extras(param_dict, proj_dict):
     with open(hb_file_mod,'wb') as hb_ngal:
         num.savetxt(hb_ngal, haloid_ngal, fmt='%d')
     cu.File_Exists(hb_file_mod)
+    ## Converting to Pandas DataFrame
+    # Dictionary
+    hb_dict = {}
+    hb_dict['x'          ] = x_arr
+    hb_dict['y'          ] = y_arr
+    hb_dict['z'          ] = z_arr
+    hb_dict['vx'         ] = vx_arr
+    hb_dict['vy'         ] = vy_arr
+    hb_dict['vz'         ] = vz_arr
+    hb_dict['halom'      ] = halom
+    hb_dict['loghalom'   ] = num.log10(halom)
+    hb_dict['cs_flag'    ] = cs_flag
+    hb_dict['haloid'     ] = haloid
+    hb_dict['haloid_ngal'] = haloid_ngal
+    # To DataFrame
+    hb_cols = ['x','y','z','vx','vy','vz','halom','loghalom',
+                'cs_flag','haloid','haloid_ngal']
+    hb_pd   = pd.DataFrame(hb_dict)[hb_cols]
     ## Assigning to `param_dict`
     param_dict['hb_file_mod'] = hb_file_mod
     param_dict['hb_cols'    ] = hb_cols
@@ -766,31 +769,6 @@ def hb_file_construction_extras(param_dict, proj_dict):
     print('{0} Creating file with Ngals in each halo ... Complete'.format(Prog_msg))
 
     return param_dict, hb_pd
-
-def hb_file_create(param_dict, proj_dict, hb_pd, ext='txt'):
-    """
-    Creates a modified version of the Halobias file
-
-    Parameters
-    ----------
-    param_dict: python dictionary
-        dictionary with `project` variables
-
-    proj_dict: python dictionary
-        dictionary with info of the project that uses the
-        `Data Science` Cookiecutter template.
-
-    ext: string, optional (default = 'txt')
-        extension of the output file
-    """
-    ## Local halobias file
-    hb_local    = param_dict['files_dict']['hb_file_local']
-    ## Halobias modified version file
-    hb_file_mod = os.path.join( proj_dict['hb_files_dir'],
-                                os.path.basename(hb_local)+'.mod')
-
-
-
 
 def clf_assignment(param_dict, proj_dict):
     """
@@ -857,11 +835,9 @@ def main(args):
     ##
     ## Redshift and Comoving distance
     z_como_pd = z_comoving_calc(param_dict, proj_dict, cosmo_model)
-    ## Halobias Extras file
+    ## Halobias Extras file - Modified Halobias file
     (   param_dict,
         hb_pd     ) = hb_file_construction_extras(param_dict, proj_dict)
-    ## Creating modified version of Halobias file
-    hb_file_create(param_dict, proj_dict)
     ## Conditional Luminosity Function
 
 

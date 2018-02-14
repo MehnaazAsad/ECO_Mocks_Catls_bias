@@ -278,6 +278,9 @@ def add_to_dict(param_dict):
     param_dict: python dictionary
         dictionary with old and new values added
     """
+    ## Central/Satellite designations
+    cens = int(1)
+    sats = int(0)
     ## HOD Parameters
     hod_dict             = {}
     hod_dict['logMmin' ] = 11.4
@@ -295,6 +298,8 @@ def add_to_dict(param_dict):
     url_checker(url_catl)
     ##
     ## Adding to `param_dict`
+    param_dict['cens'         ] = cens
+    param_dict['sats'         ] = sats
     param_dict['url_catl'     ] = url_catl
     param_dict['hod_dict'     ] = hod_dict
     param_dict['choice_survey'] = choice_survey
@@ -848,6 +853,74 @@ def clf_assignment(param_dict, proj_dict, choice_survey=2):
 
     return clf_pd
 
+def cen_sat_distance_calc(clf_pd, param_dict):
+    """
+    Computes the distance between the central and its satellites in a given 
+    DM halo
+
+    Parameters
+    ----------
+    clf_pd: pandas DataFrame
+        DataFrame with information from the CLF process
+            - x, y, z, vx, vy, vz: Positions and velocity components
+            - log(Mhalo): log-base 10 of the DM halo mass
+            - `cs_flag`: Central (1) / Satellite (0) designation
+            - `haloid`: ID of the galaxy's host DM halo
+            - `halo_ngal`: Total number of galaxies in the DM halo
+            - `M_r`: r-band absolute magnitude from ECO via abundance matching
+            - `galid`: Galaxy ID
+
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    Returns
+    ----------
+    clf_pd_mod: pandas DataFrame
+        Updated version of `clf_pd` with new columns of distances
+    """
+    ## Centrals and Satellites
+    cens            = param_dict['cens']
+    sats            = param_dict['sats']
+    dist_c_label    = 'dist_central'
+    dist_sq_c_label = 'dist_sq_central'
+    ## Galaxy coordinates
+    coords  = ['x'   ,'y'   , 'z'  ]
+    coords2 = ['x_sq','y_sq','z_sq']
+    ## Unique HaloIDs
+    haloid_unq = num.unique(clf_pd.loc[clf_pd['halo_ngal'] != 1,'haloid'])
+    n_halo_unq = len(haloid_unq)
+    ## CLF columns
+    clf_cols = ['x','z','y','haloid','cs_flag']
+    ## Copy of `clf_pd`
+    clf_pd_mod = clf_pd[clf_cols].copy()
+    ## Initializing new column in `clf_pd`
+    clf_pd_mod.loc[:,dist_c_label   ] = num.zeros(clf_pd.shape[0])
+    clf_pd_mod.loc[:,dist_sq_c_label] = num.zeros(clf_pd.shape[0])
+    ## Positions squared
+    clf_pd_mod.loc[:,'x_sq'] = clf_pd_mod['x']**2
+    clf_pd_mod.loc[:,'y_sq'] = clf_pd_mod['y']**2
+    clf_pd_mod.loc[:,'z_sq'] = clf_pd_mod['z']**2
+    ## Looping over number of halos
+    # ProgressBar properties
+    widgets   = [Bar('>'), 'Central Distance: ', ETA(), ' ', ReverseBar('<')]
+    pbar_mock = ProgressBar( widgets=widgets, maxval= n_halo_unq).start()
+    for ii, halo_ii in enumerate(haloid_unq):
+        ## Halo ID subsample
+        halo_ii_pd   = clf_pd_mod.loc[clf_pd_mod['haloid']==halo_ii]
+        ## Cens and Sats DataFrames
+        cens_coords = halo_ii_pd.loc[halo_ii_pd['cs_flag']==cens, coords]
+        sats_coords = halo_ii_pd.loc[halo_ii_pd['cs_flag']==sats, coords]
+        sats_idx    = sats_coords.index.values
+        ## Distances from central galaxy
+        cens_coords_mean = cens_coords.mean(axis=0).values
+        dist_sq_arr = num.sum(
+            sats_coords.subtract(cens_coords_mean, axis=1).values**2, axis=1)
+        ## Assigning distances to each satellite
+        clf_pd_mod.loc[sats_idx, dist_sq_c_label] = dist_sq_arr
+        ## Progressbar
+        pbar_mock.update(ii)
+    pbar_mock.finish()
+
 
 
 
@@ -895,6 +968,8 @@ def main(args):
         hb_pd     ) = hb_file_construction_extras(param_dict, proj_dict)
     ## Conditional Luminosity Function
     clf_pd = clf_assignment(param_dict, proj_dict)
+    ## Distance from Satellites to Centrals
+
 
 
 

@@ -21,3 +21,4 @@ dependencies:
     - hmf
     - CosmoloPy
     - requests
+    - tqdm

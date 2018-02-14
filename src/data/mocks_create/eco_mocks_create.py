@@ -285,6 +285,7 @@ def add_to_dict(param_dict):
     hod_dict['logM1'   ] = 12.8
     hod_dict['alpha'   ] = 1.05
     hod_dict['zmed_val'] = 'z0p000'
+    hod_dict['znow'    ] = 0
     ## Choice of Survey
     choice_survey = 2
     ###
@@ -779,7 +780,7 @@ def hb_file_construction_extras(param_dict, proj_dict):
 
     return param_dict, hb_pd
 
-def clf_assignment(param_dict, proj_dict):
+def clf_assignment(param_dict, proj_dict, choice_survey=2):
     """
     Computes the conditional luminosity function on the halobias file
     
@@ -795,9 +796,10 @@ def clf_assignment(param_dict, proj_dict):
     Prog_msg = param_dict['Prog_msg']
     ## Local halobias file
     hb_local = param_dict['files_dict']['hb_file_local']
-    ## CLF Output file
+    ## CLF Output file - ASCII and FF
     hb_clf_out = os.path.join(  proj_dict['clf_dir'],
                                 os.path.basename(hb_local) +'.clf')
+    hb_clf_out_ff = hb_clf_out + '.ff'
     ## HOD dictionary
     hod_dict = param_dict['hod_dict']
     ## CLF Executable
@@ -806,9 +808,19 @@ def clf_assignment(param_dict, proj_dict):
                             'CLF_with_ftread')
     cu.File_Exists(clf_exe)
     ## CLF Commands
-    cmd_arr = [ clf_exe, hod_dict['logMmin'], param_dict['clf_type'],
-                param_dict['hb_file_mod'], hb_clf_out,
-                ]
+    cmd_arr = [ clf_exe,
+                hod_dict['logMmin'],
+                param_dict['clf_type'],
+                param_dict['hb_file_mod'],
+                param_dict['size_cube'],
+                param_dict['hod_dict']['znow'],
+                hb_clf_out_ff,
+                choice_survey,
+                param_dict['files_dict']['eco_lum_file_local'],
+                hb_clf_out]
+    cmd_str = '{0} {1} {2} {3} {4} {5} {6} {7} < {8} > {9}'
+    cmd     = cmd_str.format(*cmd_arr)
+    print(cmd)
 
 
 

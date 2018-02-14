@@ -680,6 +680,7 @@ def survey_specs(param_dict):
     param_dict: python dictionary
         dictionary with the 'updated' project variables
     """
+    ## Redshift, volumen and r-mag limit for each survey
     if param_dict['survey'] == 'A':
         czmin      = 2532.
         czmax      = 7470.
@@ -696,6 +697,52 @@ def survey_specs(param_dict):
         survey_vol = 192294.221932
         mr_limit   = -17.33
     ##
+    ## Right Ascension and Declination coordinates for each survey
+    if param_dict['survey'] == 'A':
+        ra_min_real = 131.25
+        ra_max_real = 236.25
+        dec_min     = 0.
+        dec_max     = 5.
+        # Extras
+        dec_range   = dec_max - dec_min
+        ra_range    = ra_max_real - ra_min_real
+        ra_min      = (180. - ra_range)/2.
+        ra_max      = ra_min + ra_range
+        ra_diff     = ra_max_real - ra_max
+    elif param_dict['survey'] == 'B':
+        ra_min_real = 330.
+        ra_max_real = 45.
+        dec_min     = -1.25
+        dec_max     = 1.25
+        # Extras
+        dec_range   = dec_max - dec_min
+        ra_max_real - (ra_min_real - 360.)
+        ra_min      = (180. - ra_range)/2.
+        ra_max      = ra_min + ra_range
+        ra_diff     = ra_max_real - ra_max
+    elif param_dict['survey'] == 'ECO':
+        ra_min_real = 130.05
+        ra_max_real = 237.45
+        dec_min     = -1
+        dec_max     = 49.85
+        # Extras
+        dec_range   = dec_max - dec_min
+        ra_range    = ra_max_real - ra_min_real
+        ra_min      = (180. - ra_range)/2.
+        ra_max      = ra_min + ra_range
+        ra_diff     = ra_max_real - ra_max
+    # ra_dec dictionary
+    coord_dict = {}
+    coord_dict['ra_min_real'] = ra_min_real
+    coord_dict['ra_max_real'] = ra_max_real
+    coord_dict['dec_min'    ] = dec_min
+    coord_dict['dec_max'    ] = dec_max
+    coord_dict['dec_range'  ] = dec_range
+    coord_dict['ra_range'   ] = ra_range
+    coord_dict['ra_min'     ] = ra_min
+    coord_dict['ra_max'     ] = ra_max
+    coord_dict['ra_diff'    ] = ra_diff
+    ##
     ## Resolve-B Mr limit
     mr_eco   = -17.33
     mr_res_b = -17.00
@@ -706,6 +753,7 @@ def survey_specs(param_dict):
     param_dict['mr_limit'  ] = mr_limit
     param_dict['mr_eco'    ] = mr_eco
     param_dict['mr_res_b'  ] = mr_res_b
+    param_dict['coord_dict'] = coord_dict
 
     return param_dict
 

@@ -51,6 +51,7 @@ import astropy.units     as u
 import astropy.table     as astro_table
 import requests
 from collections import Counter
+import subprocess
 
 
 ## Functions
@@ -792,6 +793,19 @@ def clf_assignment(param_dict, proj_dict, choice_survey=2):
     proj_dict: python dictionary
         dictionary with info of the project that uses the
         `Data Science` Cookiecutter template.
+
+    Returns
+    ----------
+    clf_pd: pandas DataFrame
+        DataFrame with information from the CLF process
+        Format:
+            - x, y, z, vx, vy, vz: Positions and velocity components
+            - log(Mhalo): log-base 10 of the DM halo mass
+            - `cs_flag`: Central (1) / Satellite (0) designation
+            - `haloid`: ID of the galaxy's host DM halo
+            - `halo_ngal`: Total number of galaxies in the DM halo
+            - `M_r`: r-band absolute magnitude from ECO via abundance matching
+            - `galid`: Galaxy ID
     """
     Prog_msg = param_dict['Prog_msg']
     ## Local halobias file
@@ -807,7 +821,7 @@ def clf_assignment(param_dict, proj_dict, choice_survey=2):
                             'CLF',
                             'CLF_with_ftread')
     cu.File_Exists(clf_exe)
-    ## CLF Commands
+    ## CLF Commands - Executing in the terminal commands
     cmd_arr = [ clf_exe,
                 hod_dict['logMmin'],
                 param_dict['clf_type'],
@@ -821,6 +835,18 @@ def clf_assignment(param_dict, proj_dict, choice_survey=2):
     cmd_str = '{0} {1} {2} {3} {4} {5} {6} {7} < {8} > {9}'
     cmd     = cmd_str.format(*cmd_arr)
     print(cmd)
+    subprocess.call(cmd, shell=True)
+    ##
+    ## Reading in CLF file
+    clf_cols = ['x','y','z','vx','vy','vz',
+                'loghalom','cs_flag','haloid','halo_ngal','M_r','galid']
+    clf_pd   = pd.read_csv(hb_clf_out, sep='\s+', header=None, names=clf_cols)
+    clf_pd.loc[:,'galid'] = clf_pd['galid'].astype(int)
+    ##
+    ## Remove extra files
+    os.remove(hb_clf_out_ff)
+
+    return clf_pd
 
 
 
@@ -868,6 +894,7 @@ def main(args):
     (   param_dict,
         hb_pd     ) = hb_file_construction_extras(param_dict, proj_dict)
     ## Conditional Luminosity Function
+    clf_pd = clf_assignment(param_dict, proj_dict)
 
 
 

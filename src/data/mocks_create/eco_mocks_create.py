@@ -1082,10 +1082,11 @@ def mr_survey_matching(clf_pd, param_dict, proj_dict):
     clf_pd_mod.loc[:,'fsmgr'      ] = fsmgr_arr
     clf_pd_mod.loc[:,'mhi'        ] = mhi_arr
     clf_pd_mod.loc[:,'survey_flag'] = survey_flag_arr
+    clf_pd_mod.loc[:,'u_r'        ] = clf_pd_mod['umag'] - clf_pd_mod['rmag']
     ##
     ## Dropping all other columns
     galprop_cols = ['morph','rmag','umag','logmstar','fsmgr','mhi',
-                    'survey_flag']
+                    'survey_flag', 'u_r']
     clf_pd_mod_prop = clf_pd_mod[galprop_cols].copy()
     ##
     ## Merging DataFrames

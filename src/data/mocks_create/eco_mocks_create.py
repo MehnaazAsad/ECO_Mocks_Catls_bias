@@ -53,6 +53,9 @@ import requests
 from collections import Counter
 import subprocess
 from tqdm import tqdm
+from scipy.io.idl import readsav
+from astropy.table import Table
+from astropy.io import fits
 
 
 ## Functions
@@ -677,23 +680,32 @@ def survey_specs(param_dict):
     param_dict: python dictionary
         dictionary with the 'updated' project variables
     """
-    if param_dict['servey'] == 'A':
+    if param_dict['survey'] == 'A':
         czmin      = 2532.
         czmax      = 7470.
         survey_vol = 20957.7789388
+        mr_limit   = -17.33
     elif param_dict['survey'] == 'B':
         czmin      = 4250.
         czmax      = 7250.
         survey_vol = 15908.063125
+        mr_limit   = -17.00
     elif param_dict['survey'] == 'ECO':
         czmin      = 2532.
         czmax      = 7470.
         survey_vol = 192294.221932
-
+        mr_limit   = -17.33
+    ##
+    ## Resolve-B Mr limit
+    mr_eco   = -17.33
+    mr_res_b = -17.00
     ## Saving to `param_dict`
     param_dict['czmin'     ] = czmin
     param_dict['czmax'     ] = czmax
     param_dict['survey_vol'] = survey_vol
+    param_dict['mr_limit'  ] = mr_limit
+    param_dict['mr_eco'    ] = mr_eco
+    param_dict['mr_res_b'  ] = mr_res_b
 
     return param_dict
 
@@ -930,6 +942,162 @@ def cen_sat_distance_calc(clf_pd, param_dict):
 
     return clf_pd
 
+def mr_survey_matching(clf_pd, param_dict, proj_dict):
+    """
+    Finds the closest r-band absolute magnitude from ECO catalogue 
+    and assigns them to mock galaxies
+
+    Parameters
+    -------------
+    clf_pd: pandas DataFrame
+        DataFrame containing information from Halobias + CLF procedures
+    
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        dictionary with info of the project that uses the
+        `Data Science` Cookiecutter template.
+
+    Returns
+    -------------
+    clf_galprop_pd: pandas DataFrame
+        DataFrame with updated values.
+        New values included:
+            - Morphology
+            - Stellar mass
+            - r-band apparent magnitude
+            - u-band apparent magnitude
+            - FSMGR
+            - `Match_Flag`:
+            - MHI
+            - Survey flag: {1 == ECO, 0 == Resolve B}
+    """
+    Prog_msg   = param_dict['Prog_msg']
+    failval    = 0.
+    ngal_mock  = len(clf_pd)
+    ## Survey flags
+    eco_flag = 1
+    res_flag = 0
+    ## Copy of `clf_pd`
+    clf_pd_mod = clf_pd.copy()
+    ## Filenames
+    eco_phot_file   = param_dict['files_dict']['eco_phot_file_local']
+    eco_mhi_file    = param_dict['files_dict']['mhi_file_local']
+    res_b_phot_file = param_dict['files_dict']['res_b_phot_file_local']
+    ## ECO Photometry catalogue
+    #  - reading in dictionary
+    eco_phot_dict = readsav(eco_phot_file, python_dict=True)
+    #  - Converting to Pandas DataFrame
+    eco_phot_pd   = Table(eco_phot_dict).to_pandas()
+    ##
+    ## ECO - MHI measurements
+    eco_mhi_pd    = pd.read_csv(eco_mhi_file, sep='\s+', names=['MHI'])
+    ## Appending to `eco_phot_pd`
+    try:
+        assert(len(eco_phot_pd) == len(eco_mhi_pd))
+        ## Adding to DataFrame
+        eco_phot_pd.loc[:,'MHI'] = eco_mhi_pd['MHI'].values
+    except:
+        msg = '{0} `len(eco_phot_pd)` != `len(eco_mhi_pd)`! Unequal lengths!'
+        msg = msg.format(Prog_msg)
+        raise ValueError(msg)
+    ##
+    ## Cleaning up DataFrame - r-band absolute magnitudes
+    eco_phot_mod_pd = eco_phot_pd.loc[(eco_phot_pd['goodnewabsr'] != failval) &
+                      (eco_phot_pd['goodnewabsr'] < param_dict['mr_limit'])]
+    eco_phot_mod_pd.reset_index(inplace=True, drop=True)
+    ##
+    ## Reading in `RESOLVE B` catalogue - r-band absolute magnitudes
+    res_phot_pd = Table(fits.getdata(res_b_phot_file)).to_pandas()
+    res_phot_mod_pd = res_phot_pd.loc[\
+                        (res_phot_pd['ABSMAGR'] != failval) &
+                        (res_phot_pd['ABSMAGR'] <= param_dict['mr_res_b']) &
+                        (res_phot_pd['ABSMAGR'] >  param_dict['mr_eco'  ])]
+    res_phot_mod_pd.reset_index(inplace=True, drop=True)
+    ##
+    ## Initializing arrays
+    morph_arr       = [[] for x in range(ngal_mock)]
+    dex_rmag_arr    = [[] for x in range(ngal_mock)]
+    dex_umag_arr    = [[] for x in range(ngal_mock)]
+    logmstar_arr    = [[] for x in range(ngal_mock)]
+    fsmgr_arr       = [[] for x in range(ngal_mock)]
+    survey_flag_arr = [[] for x in range(ngal_mock)]
+    mhi_arr         = [[] for x in range(ngal_mock)]
+    ##
+    ## Assigning galaxy properties to mock galaxies
+    #
+    clf_mr_arr = clf_pd_mod['M_r'].values
+    eco_mr_arr = eco_phot_mod_pd['goodnewabsr'].values
+    res_mr_arr = res_phot_mod_pd['ABSMAGR'].values
+    ## Galaxy properties column names
+    eco_cols = ['goodmorph','rpsmoothrestrmagnew','rpsmoothrestumagnew',
+                'rpgoodmstarsnew','rpmeanssfr']
+    res_cols = ['MORPH', 'SMOOTHRESTRMAG','SMOOTHRESTUMAG','MSTARS',
+                'MODELFSMGR']
+    # Looping over all galaxies
+    for ii in tqdm(range(ngal_mock)):
+        ## Galaxy r-band absolute magnitude
+        gal_mr = clf_mr_arr[ii]
+        ## Choosing which catalogue to use
+        if gal_mr <= param_dict['mr_eco']:
+            idx_match  = cu.closest_val(gal_mr, eco_mr_arr)
+            survey_tag = eco_flag
+            ## Galaxy Properties
+            (   morph_val,
+                rmag_val ,
+                umag_val ,
+                logmstar_val,
+                fsmgr_val) = eco_phot_mod_pd.loc[idx_match, eco_cols].values
+            # MHI value
+            mhi_val   = 10**(eco_phot_mod_pd['MHI'][idx_match] + logmstar_val)
+        elif (gal_mr > param_dict['mr_eco']) and (gal_mr <= param_dict['mr_res_b']):
+            idx_match  = cu.closest_val(gal_mr, res_mr_arr)
+            survey_tag = res_flag
+            ## Galaxy Properties
+            (   morph_val,
+                rmag_val ,
+                umag_val ,
+                mstar_val,
+                fsmgr_val) = res_phot_mod_pd.loc[idx_match, res_cols]
+            ## MHI value
+            mhi_val = res_phot_mod_pd.loc[idx_match, 'MHI']
+            ## Fixing issue with units
+            logmstar_val = num.log10(mstar_val)
+        ##
+        ## Assigning them to arrays
+        morph_arr       [ii] = morph_val
+        dex_rmag_arr    [ii] = rmag_val
+        dex_umag_arr    [ii] = umag_val
+        logmstar_arr    [ii] = logmstar_val
+        fsmgr_arr       [ii] = fsmgr_val
+        mhi_arr         [ii] = mhi_val
+        survey_flag_arr [ii] = survey_tag
+    ##
+    ## Assigning them to `clf_pd_mod`
+    clf_pd_mod.loc[:,'morph'      ] = morph_arr
+    clf_pd_mod.loc[:,'rmag'       ] = dex_rmag_arr
+    clf_pd_mod.loc[:,'umag'       ] = dex_umag_arr
+    clf_pd_mod.loc[:,'logmstar'   ] = logmstar_arr
+    clf_pd_mod.loc[:,'fsmgr'      ] = fsmgr_arr
+    clf_pd_mod.loc[:,'mhi'        ] = mhi_arr
+    clf_pd_mod.loc[:,'survey_flag'] = survey_flag_arr
+    ##
+    ## Dropping all other columns
+    galprop_cols = ['morph','rmag','umag','logmstar','fsmgr','mhi',
+                    'survey_flag']
+    clf_pd_mod_prop = clf_pd_mod[galprop_cols].copy()
+    ##
+    ## Merging DataFrames
+    clf_galprop_pd = pd.merge(clf_pd, clf_pd_mod_prop, 
+                                left_index=True, right_index=True)
+
+    return clf_galprop_pd
+
+
+
+
+
 
 
 
@@ -959,6 +1127,8 @@ def main(args):
         if key !='Prog_msg':
             print('{0} `{1}`: {2}'.format(Prog_msg, key, key_val))
     print('\n'+50*'='+'\n')
+    ## Survey Details
+    param_dict = survey_specs(param_dict)
     ##
     ## Cosmological model and Halo mass function
     cosmo_model, cosmo_hmf = cosmo_create(param_dict['cosmo_choice'])
@@ -979,6 +1149,8 @@ def main(args):
     clf_pd = clf_assignment(param_dict, proj_dict)
     ## Distance from Satellites to Centrals
     clf_pd = cen_sat_distance_calc(clf_pd, param_dict)
+    ## Finding closest magnitude value from ECO catalogue
+    clf_pd = mr_survey_matching(clf_pd, param_dict, proj_dict)
 
 
 

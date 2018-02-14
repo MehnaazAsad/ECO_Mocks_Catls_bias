@@ -757,6 +757,8 @@ def survey_specs(param_dict):
 
     return param_dict
 
+def 
+
 ## -----------| Halobias-related functions |----------- ##
 
 def hb_file_construction_extras(param_dict, proj_dict):

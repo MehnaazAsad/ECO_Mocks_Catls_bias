@@ -8,4 +8,5 @@ from .pandas_hdf5           import *
 from .sdss_catls_obs        import *
 from .spherematch           import *
 from .statistics_vc         import *
+from .survey_utils          import *
 

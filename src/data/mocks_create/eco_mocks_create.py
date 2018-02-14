@@ -259,6 +259,9 @@ def param_vals_test(param_dict):
     """
     ##
     ## This is where the tests for `param_dict` input parameters go.
+    ##
+    ## Size of the cube
+    assert(param_dict['size_cube'] == 180.)
 
 def add_to_dict(param_dict):
     """
@@ -763,6 +766,13 @@ def hb_file_construction_extras(param_dict, proj_dict):
     ## Assigning to `param_dict`
     param_dict['hb_file_mod'] = hb_file_mod
     param_dict['hb_cols'    ] = hb_cols
+    ## Testing `lbox`
+    try:
+        assert(lbox==param_dict['size_cube'])
+    except:
+        msg = '{0} `lbox` ({1}) does not match `size_cube` ({2})!'.format(
+            Prog_msg, lbox, param_dict['size_cube'])
+        raise ValueError(msg)
     # Message
     print('\n{0} Halo_ngal file: {1}'.format(Prog_msg, hb_file_mod))
     print('{0} Creating file with Ngals in each halo ... Complete'.format(Prog_msg))
@@ -782,6 +792,12 @@ def clf_assignment(param_dict, proj_dict):
         dictionary with info of the project that uses the
         `Data Science` Cookiecutter template.
     """
+    Prog_msg = param_dict['Prog_msg']
+    ## Local halobias file
+    hb_local = param_dict['files_dict']['hb_file_local']
+    ## CLF Output file
+    hb_clf_out = os.path.join(  proj_dict['clf_dir'],
+                                os.path.basename(hb_local) +'.clf')
     ## HOD dictionary
     hod_dict = param_dict['hod_dict']
     ## CLF Executable
@@ -790,7 +806,9 @@ def clf_assignment(param_dict, proj_dict):
                             'CLF_with_ftread')
     cu.File_Exists(clf_exe)
     ## CLF Commands
-    cmd_arr = [clf_exe, hod_dict['logMmin'], ]
+    cmd_arr = [ clf_exe, hod_dict['logMmin'], param_dict['clf_type'],
+                param_dict['hb_file_mod'], hb_clf_out,
+                ]
 
 
 

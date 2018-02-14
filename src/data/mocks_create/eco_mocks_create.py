@@ -52,6 +52,7 @@ import astropy.table     as astro_table
 import requests
 from collections import Counter
 import subprocess
+from tqdm import tqdm
 
 
 ## Functions
@@ -875,14 +876,19 @@ def cen_sat_distance_calc(clf_pd, param_dict):
 
     Returns
     ----------
-    clf_pd_mod: pandas DataFrame
+    clf_pd: pandas DataFrame
         Updated version of `clf_pd` with new columns of distances
+        New key: `dist_c` --> Distance to the satellite's central galaxy
     """
+    ##
+    ## TO DO: Fix issue with central and satellite being really close to 
+    ##        the box boundary, therefore having different final distances
+    ##
     ## Centrals and Satellites
     cens            = param_dict['cens']
     sats            = param_dict['sats']
-    dist_c_label    = 'dist_central'
-    dist_sq_c_label = 'dist_sq_central'
+    dist_c_label    = 'dist_c'
+    dist_sq_c_label = 'dist_c_sq'
     ## Galaxy coordinates
     coords  = ['x'   ,'y'   , 'z'  ]
     coords2 = ['x_sq','y_sq','z_sq']
@@ -894,7 +900,6 @@ def cen_sat_distance_calc(clf_pd, param_dict):
     ## Copy of `clf_pd`
     clf_pd_mod = clf_pd[clf_cols].copy()
     ## Initializing new column in `clf_pd`
-    clf_pd_mod.loc[:,dist_c_label   ] = num.zeros(clf_pd.shape[0])
     clf_pd_mod.loc[:,dist_sq_c_label] = num.zeros(clf_pd.shape[0])
     ## Positions squared
     clf_pd_mod.loc[:,'x_sq'] = clf_pd_mod['x']**2
@@ -902,9 +907,7 @@ def cen_sat_distance_calc(clf_pd, param_dict):
     clf_pd_mod.loc[:,'z_sq'] = clf_pd_mod['z']**2
     ## Looping over number of halos
     # ProgressBar properties
-    widgets   = [Bar('>'), 'Central Distance: ', ETA(), ' ', ReverseBar('<')]
-    pbar_mock = ProgressBar( widgets=widgets, maxval= n_halo_unq).start()
-    for ii, halo_ii in enumerate(haloid_unq):
+    for ii, halo_ii in enumerate(tqdm(haloid_unq)):
         ## Halo ID subsample
         halo_ii_pd   = clf_pd_mod.loc[clf_pd_mod['haloid']==halo_ii]
         ## Cens and Sats DataFrames
@@ -913,13 +916,19 @@ def cen_sat_distance_calc(clf_pd, param_dict):
         sats_idx    = sats_coords.index.values
         ## Distances from central galaxy
         cens_coords_mean = cens_coords.mean(axis=0).values
+        ## Difference in coordinates
         dist_sq_arr = num.sum(
             sats_coords.subtract(cens_coords_mean, axis=1).values**2, axis=1)
         ## Assigning distances to each satellite
         clf_pd_mod.loc[sats_idx, dist_sq_c_label] = dist_sq_arr
-        ## Progressbar
-        pbar_mock.update(ii)
-    pbar_mock.finish()
+    ##
+    ## Taking the square root of distances
+    clf_pd_mod.loc[:,dist_c_label] = (clf_pd_mod[dist_sq_c_label].values)**.5
+    ##
+    ## Assigning it to `clf_pd`
+    clf_pd.loc[:, dist_c_label] = clf_pd_mod[dist_c_label].values
+
+    return clf_pd
 
 
 
@@ -969,6 +978,7 @@ def main(args):
     ## Conditional Luminosity Function
     clf_pd = clf_assignment(param_dict, proj_dict)
     ## Distance from Satellites to Centrals
+    clf_pd = cen_sat_distance_calc(clf_pd, param_dict)
 
 
 

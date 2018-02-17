@@ -83,5 +83,6 @@ def survey_vol(ra_arr, dec_arr, rho_arr):
     vol  = (1./3.)*(num.cos(phi_min_rad)-num.cos(phi_max_rad))
     vol *= (theta_max_rad) - (theta_min_rad)
     vol *= (rho_max**3) - rho_min**3
+    vol  = num.abs(vol)
 
     return vol

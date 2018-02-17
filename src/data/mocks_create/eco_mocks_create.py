@@ -56,6 +56,7 @@ from tqdm import tqdm
 from scipy.io.idl import readsav
 from astropy.table import Table
 from astropy.io import fits
+import copy
 
 
 ## Functions
@@ -666,7 +667,7 @@ def z_comoving_calc(param_dict, proj_dict, cosmo_model,
 
 ## -----------| Survey-related functions |----------- ##
 
-def survey_specs(param_dict):
+def survey_specs(param_dict, cosmo_model):
     """
     Provides the specifications of the survey being created
 
@@ -674,6 +675,9 @@ def survey_specs(param_dict):
     ----------
     param_dict: python dictionary
         dictionary with `project` variables
+
+    cosmo_model: astropy cosmology object
+        cosmology used throughout the project
 
     Returns
     ----------
@@ -684,17 +688,17 @@ def survey_specs(param_dict):
     if param_dict['survey'] == 'A':
         czmin      = 2532.
         czmax      = 7470.
-        survey_vol = 20957.7789388
+        # survey_vol = 20957.7789388
         mr_limit   = -17.33
     elif param_dict['survey'] == 'B':
         czmin      = 4250.
         czmax      = 7250.
-        survey_vol = 15908.063125
+        # survey_vol = 15908.063125
         mr_limit   = -17.00
     elif param_dict['survey'] == 'ECO':
         czmin      = 2532.
         czmax      = 7470.
-        survey_vol = 192294.221932
+        # survey_vol = 192294.221932
         mr_limit   = -17.33
     ##
     ## Right Ascension and Declination coordinates for each survey
@@ -709,6 +713,11 @@ def survey_specs(param_dict):
         ra_min      = (180. - ra_range)/2.
         ra_max      = ra_min + ra_range
         ra_diff     = ra_max_real - ra_max
+        # Assert statements
+        assert(dec_min < dec_max)
+        assert(ra_range >= 0)
+        assert(ra_min < ra_max)
+        assert(ra_min_real < ra_max_real)
     elif param_dict['survey'] == 'B':
         ra_min_real = 330.
         ra_max_real = 45.
@@ -720,6 +729,10 @@ def survey_specs(param_dict):
         ra_min      = (180. - ra_range)/2.
         ra_max      = ra_min + ra_range
         ra_diff     = ra_max_real - ra_max
+        # Assert statements
+        assert(dec_min < dec_max)
+        assert(ra_range >= 0)
+        assert(ra_min < ra_max)
     elif param_dict['survey'] == 'ECO':
         ra_min_real = 130.05
         ra_max_real = 237.45
@@ -731,6 +744,18 @@ def survey_specs(param_dict):
         ra_min      = (180. - ra_range)/2.
         ra_max      = ra_min + ra_range
         ra_diff     = ra_max_real - ra_max
+        # Assert statements
+        assert(dec_min < dec_max)
+        assert(ra_range >= 0)
+        assert(ra_min < ra_max)
+        assert(ra_min_real < ra_max_real)
+    ## Survey volume
+    km_s       = u.km/u.s
+    z_arr      = (num.array([czmin, czmax])*km_s/(ac.c.to(km_s))).value
+    z_arr      = (num.array([czmin, czmax])*km_s/(3e5*km_s)).value
+    survey_vol = cu.survey_vol( [0, ra_range],
+                                [dec_min, dec_max],
+                                cosmo_model.comoving_distance(z_arr).value)
     # ra_dec dictionary
     coord_dict = {}
     coord_dict['ra_min_real'] = ra_min_real
@@ -757,7 +782,36 @@ def survey_specs(param_dict):
 
     return param_dict
 
-# def 
+def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
+    """
+    Carves out the geometry of the `ECO` survey and produces set 
+    of mock catalogues
+    
+    Parameters
+    -------------
+    clf_pd: pandas DataFrame
+        DataFrame containing information from Halobias + CLF procedures
+    
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        dictionary with info of the project that uses the
+        `Data Science` Cookiecutter template.
+    """
+    ## Coordinates dictionary
+    coord_dict = param_dict['coord_dict']
+    ###### ----- X-Y Upper Left Mocks  -----######
+    clf_ul_pd = copy.deepcopy(clf_pd)
+    # Coordinates
+    ra_min_ul = 90. - coord_dict['ra_range']
+    ###### ----- X-Y Upper Right Mocks -----######
+    clf_ur_pd = copy.deepcopy(clf_pd)
+    ###### ----- X-Y Lower Left Mocks  -----######
+    clf_ll_pd = copy.deepcopy(clf_pd)
+    ###### ----- X-Y Lower Right Mocks -----######
+    clf_lr_pd = copy.deepcopy(clf_pd)
+
 
 ## -----------| Halobias-related functions |----------- ##
 
@@ -1145,7 +1199,7 @@ def mr_survey_matching(clf_pd, param_dict, proj_dict):
 
     return clf_galprop_pd
 
-
+## -----------| Mock-catalogues-related functions |----------- ##
 
 
 
@@ -1178,11 +1232,11 @@ def main(args):
         if key !='Prog_msg':
             print('{0} `{1}`: {2}'.format(Prog_msg, key, key_val))
     print('\n'+50*'='+'\n')
-    ## Survey Details
-    param_dict = survey_specs(param_dict)
     ##
     ## Cosmological model and Halo mass function
     cosmo_model, cosmo_hmf = cosmo_create(param_dict['cosmo_choice'])
+    ## Survey Details
+    param_dict = survey_specs(param_dict, cosmo_model)
     ##
     ## Mass function for given cosmology
     hmf_pd = hmf_calc(cosmo_model, proj_dict, param_dict, Mmin=6., Mmax=16.01,
@@ -1202,6 +1256,10 @@ def main(args):
     clf_pd = cen_sat_distance_calc(clf_pd, param_dict)
     ## Finding closest magnitude value from ECO catalogue
     clf_pd = mr_survey_matching(clf_pd, param_dict, proj_dict)
+    ## Carving out geometry of Survey and carrying out the analysis
+    if param_dict['survey'] == 'ECO':
+        eco_geometry_mocks(clf_pd, param_dict, proj_dict)
+
 
 
 

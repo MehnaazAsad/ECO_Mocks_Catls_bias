@@ -12,7 +12,7 @@ __author__     =['Victor Calderon']
 __copyright__  =["Copyright 2017 Victor Calderon, eco_utils"]
 __email__      =['victor.calderon@vanderbilt.edu']
 __maintainer__ =['Victor Calderon']
-__all__        =["closest_val"]
+__all__        =["closest_val", "survey_vol"]
 
 ## Importing modules
 import numpy as num

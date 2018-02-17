@@ -753,9 +753,22 @@ def survey_specs(param_dict, cosmo_model):
     km_s       = u.km/u.s
     z_arr      = (num.array([czmin, czmax])*km_s/(ac.c.to(km_s))).value
     z_arr      = (num.array([czmin, czmax])*km_s/(3e5*km_s)).value
+    r_arr      = cosmo_model.comoving_distance(z_arr).to(u.Mpc).value
     survey_vol = cu.survey_vol( [0, ra_range],
                                 [dec_min, dec_max],
                                 cosmo_model.comoving_distance(z_arr).value)
+    ##
+    ## Survey height, and other geometrical factors
+    (   h_total,
+        s1_top ,
+        s2     ,
+        h1     ) = cu.geometry_calc(r_arr[0], r_arr[1], ra_range)
+    (   h_side ,
+        s1_side,
+        d_th   ,
+        h2     ) = cu.geometry_calc(r_arr[0], r_arr[1], dec_range)
+
+    ##
     # ra_dec dictionary
     coord_dict = {}
     coord_dict['ra_min_real'] = ra_min_real
@@ -767,6 +780,15 @@ def survey_specs(param_dict, cosmo_model):
     coord_dict['ra_min'     ] = ra_min
     coord_dict['ra_max'     ] = ra_max
     coord_dict['ra_diff'    ] = ra_diff
+
+    coord_dict['h_total'    ] = h_total
+    coord_dict['s1_top'     ] = s1_top
+    coord_dict['s2'         ] = s2
+    coord_dict['h1'         ] = h1
+    coord_dict['h_side'     ] = h_side
+    coord_dict['s1_side'    ] = s1_side
+    coord_dict['d_th'       ] = d_th
+    coord_dict['h2'         ] = h2
     ##
     ## Resolve-B Mr limit
     mr_eco   = -17.33
@@ -804,7 +826,14 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
     ###### ----- X-Y Upper Left Mocks  -----######
     clf_ul_pd = copy.deepcopy(clf_pd)
     # Coordinates
-    ra_min_ul = 90. - coord_dict['ra_range']
+    ra_min_ul  = 90. - coord_dict['ra_range']
+    ra_max_ul  = 90.
+    ra_diff_ul = coord_dict['ra_max_real'] - ra_max_ul
+    gap_ul   = 20.
+    x_init_ul = 0.0 + 10.
+    y_init_ul = param_dict['size_cube'] - coord_dict['ra_max'] - 5.
+    z_init_ul = 10.
+    z_delta_ul = gap_ul + 
     ###### ----- X-Y Upper Right Mocks -----######
     clf_ur_pd = copy.deepcopy(clf_pd)
     ###### ----- X-Y Lower Left Mocks  -----######

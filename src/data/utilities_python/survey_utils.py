@@ -47,3 +47,41 @@ def closest_val(val, arr):
             return num.random.choice(idx_arr)
     except:
         raise ValueError('>> Not matches found!')
+
+def survey_vol(ra_arr, dec_arr, rho_arr):
+    """
+    Computes the volume of a "sphere" with given limits for 
+    ra, dec, and distance
+
+    Parameters
+    ----------
+    ra_arr: list or numpy.ndarray, shape (N,2)
+        array with initial and final right ascension coordinates
+        Unit: degrees
+
+    dec_arr: list or numpy.ndarray, shape (N,2)
+        array with initial and final declination coordinates
+        Unit: degrees
+
+    rho_arr: list or numpy.ndarray, shape (N,2)
+        arrray with initial and final distance
+        Unit: distance units
+    
+    Returns
+    ----------
+    survey_vol: float
+        volume of the survey being analyzed
+        Unit: distance**(3)
+    """
+    # Right ascension - Radians  theta coordinate
+    theta_min_rad, theta_max_rad = num.radians(num.array(ra_arr))
+    # Declination - Radians - phi coordinate
+    phi_min_rad, phi_max_rad = num.radians(90.-num.array(dec_arr))[::-1]
+    # Distance
+    rho_min, rho_max = rho_arr
+    # Calculating volume
+    vol  = (1./3.)*(num.cos(phi_min_rad)-num.cos(phi_max_rad))
+    vol *= (theta_max_rad) - (theta_min_rad)
+    vol *= (rho_max**3) - rho_min**3
+
+    return vol

@@ -12,7 +12,9 @@ __author__     =['Victor Calderon']
 __copyright__  =["Copyright 2017 Victor Calderon, eco_utils"]
 __email__      =['victor.calderon@vanderbilt.edu']
 __maintainer__ =['Victor Calderon']
-__all__        =["closest_val", "survey_vol"]
+__all__        =["closest_val", "survey_vol", "cos_rule",
+                    "distance_diff_catl", "geometry_calc", 
+                    "mock_cart_to_spherical_coords"]
 
 ## Importing modules
 import numpy as num
@@ -86,3 +88,169 @@ def survey_vol(ra_arr, dec_arr, rho_arr):
     vol  = num.abs(vol)
 
     return vol
+
+def cos_rule(a, b, gamma):
+    """
+    Computes the `cosine rule` for 2 distances and one angle
+
+    Parameters
+    -----------
+    a: float
+        one of the sides of the triangle
+
+    b: float
+        the other side of the triangle
+
+    gamma: float
+        angle facing the side of the triangle in questions
+        Units: degrees
+
+    Returns
+    -----------
+    c: float
+        measure of the size `c` in question
+    """
+    # Degree in radians
+    gamma_rad = num.radians(gamma)
+    # Third side of the triangle
+    c = (a**2 + b**2 - (2*a*b*num.cos(gamma_rad)))**(.5)
+
+    return c
+
+def distance_diff_catl(ra, dist, gap):
+    """
+    Computes the necessary distance between catalogues
+
+    Parameters
+    -----------
+    ra: float
+        1st distance
+
+    dist: float
+        2nd distance
+
+    Returns
+    -----------
+    dist_diff: float
+        amount of distance necessary between mocks
+    """
+    ra = float(ra)
+    dist = float(dist)
+    gap = float(gap)
+    ## Calculation of distance between catalogues
+    dist_diff = (((ra + gap)**2 - (dist/2.)**2.)**(0.5)) - ra
+
+    return dist_diff
+
+def geometry_calc(dist_1, dist_2, alpha):
+    """
+    Computes the geometrical components to construct the catalogues in 
+    a simulation box
+
+    Parameters
+    -----------
+    dist_1: float
+        1st distance used to determine geometrical components
+
+    dist_2: float
+        2nd distance used to determine geometrical components
+
+    alpha: float
+        angle used to determine geometrical components
+        Unit: degrees
+
+    Returns
+    -----------
+    h_total: float
+
+    h1: float
+
+    h2: float
+
+    s1: float
+
+    s2: float
+    """
+    assert(dist_1 <= dist_2)
+    ## Calculating distances for the triangles
+    s1 = cos_rule(dist_1, dist_1, alpha)
+    s2 = cos_rule(dist_2, dist_2, alpha)
+    ## Height
+    h1 = (dist_1**2 - (s1/2.)**2)**0.5
+    assert(h1 <= dist_1)
+    h2      = dist_1 - h1
+    h_total = h2 + (dist_2 - dist_1)
+
+    return h_total
+
+def mock_cart_to_spherical_coords(x, y, z, dist):
+    """
+    Computes the right ascension and declination for the given 
+    point in (x,y,z) position
+
+    Parameters
+    -----------
+    x: float
+        x-coordinate of the point
+
+    y: float
+        y-coordinate of the point
+
+    z: float
+        z-coordinate of the point
+
+    dist: float
+        dist to the point from observer's position
+
+    Returns
+    -----------
+    ra_val: float
+        right ascension of the point on the sky
+
+    dec_val: float
+        declination of the point on the sky
+    """
+    ## Reformatting coordinates
+    x_val = float(x)/dist
+    y_val = float(y)/dist
+    z_val = float(z)/dist
+    dist  = float(dist)
+    ## Declination
+    dec_val = 90. - num.degrees(num.arccos(z_val))
+    ## Right ascension
+    if x_val == 0:
+        if y_val > 0.:
+            ra_val = 90.
+        elif y_val < 0.:
+            ra_val = -90.
+    else:
+        ra_val = num.degrees(num.arctan(y_val/x_val))
+    ##
+    ## Seeing on which quadrant the point is at
+    if x_val < 0.:
+        ra_val += 180.
+    elif (x_val >= 0.) and (y_val < 0.):
+        ra_val += 360.
+
+    return ra_val, dec_val
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -57,6 +57,7 @@ from scipy.io.idl import readsav
 from astropy.table import Table
 from astropy.io import fits
 import copy
+from multiprocessing import Pool, Process, cpu_count
 
 
 ## Functions
@@ -243,6 +244,12 @@ def get_parser():
                         help='Program message to use throught the script',
                         type=str,
                         default=cu.Program_Msg(__file__))
+    ## CPU Counts
+    parser.add_argument('-cpu',
+                        dest='cpu_frac',
+                        help='Fraction of total number of CPUs to use',
+                        type=float,
+                        default=0.75)
     ## Parsing Objects
     args = parser.parse_args()
 
@@ -725,7 +732,7 @@ def survey_specs(param_dict, cosmo_model):
         dec_max     = 1.25
         # Extras
         dec_range   = dec_max - dec_min
-        ra_max_real - (ra_min_real - 360.)
+        ra_range    = ra_max_real - (ra_min_real - 360.)
         ra_min      = (180. - ra_range)/2.
         ra_max      = ra_min + ra_range
         ra_diff     = ra_max_real - ra_max
@@ -756,7 +763,7 @@ def survey_specs(param_dict, cosmo_model):
     r_arr      = cosmo_model.comoving_distance(z_arr).to(u.Mpc).value
     survey_vol = cu.survey_vol( [0, ra_range],
                                 [dec_min, dec_max],
-                                cosmo_model.comoving_distance(z_arr).value)
+                                r_arr)
     ##
     ## Survey height, and other geometrical factors
     (   h_total,
@@ -822,81 +829,142 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
         `Data Science` Cookiecutter template.
     """
     ## Coordinates dictionary
-    coord_dict = param_dict['coord_dict'].copy()
+    coord_dict    = param_dict['coord_dict'].copy()
     ## Coordinate and Dataframe lists
     pos_coords_mocks = []
+    ##############################################
     ###### ----- X-Y Upper Left Mocks  -----######
-    clf_ul_pd = copy.deepcopy(clf_pd)
+    ##############################################
+    clf_ul_pd     = copy.deepcopy(clf_pd)
+    coord_dict_ul = coord_dict.copy()
     # Coordinates
-    ra_min_ul  = 90. - coord_dict['ra_range']
+    ra_min_ul  = 90. - coord_dict_ul['ra_range']
     ra_max_ul  = 90.
-    ra_diff_ul = coord_dict['ra_max_real'] - ra_max_ul
+    ra_diff_ul = coord_dict_ul['ra_max_real'] - ra_max_ul
     gap_ul     = 20.
     x_init_ul  = 10.
-    y_init_ul  = param_dict['size_cube'] - coord_dict['r_arr'][1] - 5.
+    y_init_ul  = param_dict['size_cube'] - coord_dict_ul['r_arr'][1] - 5.
     z_init_ul  = 10.
-    z_delta_ul = gap_ul + coord_dict['d_th']
-    if coord_dict['dec_min'] < 0.:
-        z_init_ul += num.abs(coord_dict['dec_min'])
+    z_delta_ul = gap_ul + coord_dict_ul['d_th']
+    if coord_dict_ul['dec_min'] < 0.:
+        z_init_ul += num.abs(coord_dict_ul['dec_min'])
     z_mocks_n_ul = int(num.floor(param_dict['size_cube']/z_delta_ul))
+    ## Saving `coord_dict`
+    coord_dict_ul = coord_dict.copy()
     ## Determining positions
     for kk in range(z_mocks_n_ul):
-        pos_coords_mocks.append([x_init_ul, y_init_ul, z_init_ul])#, clf_ul_pd])
+        pos_coords_mocks.append([   x_init_ul, y_init_ul, z_init_ul,
+                                    clf_ul_pd, coord_dict_ul])#, clf_ul_pd])
         z_init_ul += z_delta_ul
+    ##############################################
     ###### ----- X-Y Upper Right Mocks -----######
-    clf_ur_pd = copy.deepcopy(clf_pd)
+    ##############################################
+    clf_ur_pd     = copy.deepcopy(clf_pd)
+    coord_dict_ur = copy.deepcopy(coord_dict_ul)
     # Coordinates
-    x_init_ur = param_dict['size_cube'] - coord_dict['r_arr'][1] - 5.
-    y_init_ur = param_dict['size_cube'] - coord_dict['r_arr'][1] - 10.
+    x_init_ur = param_dict['size_cube'] - coord_dict_ur['r_arr'][1] - 5.
+    y_init_ur = param_dict['size_cube'] - coord_dict_ur['r_arr'][1] - 10.
     z_init_ur = 10.
-    if coord_dict['dec_min'] < 0.:
-        z_init_ur += num.abs(coord_dict['dec_min'])
+    if coord_dict_ur['dec_min'] < 0.:
+        z_init_ur += num.abs(coord_dict_ur['dec_min'])
     z_mocks_n_ur = int(num.floor(param_dict['size_cube']/z_delta_ul))
     ## Determining positions
     for kk in range(z_mocks_n_ur):
-        pos_coords_mocks.append([x_init_ur, y_init_ur, z_init_ur])#, clf_ur_pd])
+        pos_coords_mocks.append([   x_init_ur, y_init_ur, z_init_ur,
+                                    clf_ur_pd, coord_dict_ur])
         z_init_ur += z_delta_ul
+    ##############################################
     ###### ----- X-Y Lower Left Mocks  -----######
-    clf_ll_pd = copy.deepcopy(clf_pd)
+    ##############################################
+    clf_ll_pd     = copy.deepcopy(clf_pd)
+    coord_dict_ll = copy.deepcopy(coord_dict_ur)
     ## Changing geometry
-    coord_dict['ra_min'] = 180.
-    coord_dict['ra_max'] = 180. + coord_dict['ra_range']
-    coord_dict['ra_diff'] = coord_dict['ra_max_real'] - coord_dict['ra_max']
-    assert( (coord_dict['ra_min'] < coord_dict['ra_max']) and 
-            (coord_dict['ra_min'] <= 360.) and
-            (coord_dict['ra_max'] <= 360.))
+    coord_dict_ll['ra_min'] = 180.
+    coord_dict_ll['ra_max'] = 180. + coord_dict_ll['ra_range']
+    coord_dict_ll['ra_diff'] = coord_dict_ll['ra_max_real'] - coord_dict_ll['ra_max']
+    assert( (coord_dict_ll['ra_min'] < coord_dict_ll['ra_max']) and 
+            (coord_dict_ll['ra_min'] <= 360.) and
+            (coord_dict_ll['ra_max'] <= 360.))
     ## New positions
-    x_init_ll = coord_dict['r_arr'][1]
-    y_init_ll = coord_dict['r_arr'][1]
+    x_init_ll = coord_dict_ll['r_arr'][1]
+    y_init_ll = coord_dict_ll['r_arr'][1]
     z_init_ll = 10.
-    if coord_dict['dec_min'] < 0.:
-        z_init_ll += num.abs(coord_dict['dec_min'])
+    if coord_dict_ll['dec_min'] < 0.:
+        z_init_ll += num.abs(coord_dict_ll['dec_min'])
     z_mocks_n_ll = int(num.floor(param_dict['size_cube']/z_delta_ul))
     ## Saving new positions
     for kk in range(z_mocks_n_ll):
-        pos_coords_mocks.append([x_init_ll, y_init_ll, z_init_ll])#, clf_ll_pd])
+        pos_coords_mocks.append([   x_init_ll, y_init_ll, z_init_ll,
+                                    clf_ll_pd, coord_dict_ll])#, clf_ll_pd])
         z_init_ll += z_delta_ul
+    ##############################################
     ###### ----- X-Y Lower Right Mocks -----######
-    clf_lr_pd = copy.deepcopy(clf_pd)
+    ##############################################
+    clf_lr_pd     = copy.deepcopy(clf_pd)
+    coord_dict_lr = copy.deepcopy(coord_dict_ul)
     # Changing geometry
-    coord_dict['ra_min'] = 270. - coord_dict['ra_range']
-    coord_dict['ra_max'] = 270.
-    coord_dict['ra_diff'] = coord_dict['ra_max_real'] - coord_dict['ra_max']
+    coord_dict_lr['ra_min'] = 270. - coord_dict_lr['ra_range']
+    coord_dict_lr['ra_max'] = 270.
+    coord_dict_lr['ra_diff'] = coord_dict_lr['ra_max_real'] - coord_dict_lr['ra_max']
     # New positions
-    x_init_lr = coord_dict['r_arr'][1]
+    x_init_lr = coord_dict_lr['r_arr'][1]
     x_init_lr = param_dict['size_cube'] - 10.
-    y_init_lr = coord_dict['r_arr'][1] - 15.
+    y_init_lr = coord_dict_lr['r_arr'][1] - 15.
     z_init_lr = 10.
-    if coord_dict['dec_min'] < 0.:
-        z_init_lr += num.abs(coord_dict['dec_min'])
+    if coord_dict_lr['dec_min'] < 0.:
+        z_init_lr += num.abs(coord_dict_lr['dec_min'])
     z_mocks_n_lr = int(num.floor(param_dict['size_cube']/z_delta_ul))
     ## Saving new positions
     for kk in range(z_mocks_n_lr):
-        pos_coords_mocks.append([x_init_lr, y_init_lr, z_init_lr])#, clf_lr_pd])
+        pos_coords_mocks.append([   x_init_lr, y_init_lr, z_init_lr,
+                                    clf_lr_pd, coord_dict_lr])
         z_init_lr += z_delta_ul
+    ##############################################
+    ## Creating mock catalogues
+    ##############################################
+    ##
+    ## ----| Multiprocessing |---- ##
+    ##
+    ## Number of catalogues
+    n_catls = len(pos_coords_mocks)
+    ## CPU counts
+    cpu_number = int(cpu_count() * param_dict['cpu_frac'])
+    ## Step-size for each CPU
+    if cpu_number <= len(pos_coords_mocks):
+        catl_step = int(n_catls / cpu_number)
+        memb_arr  = num.arange(0, n_catls+1, catl_step)
+    else:
+        catl_step = int((n_catls/cpu_number)**-1)
+        memb_arr  = num.arange(0, n_catls+1)
+    ## Array with designated catalogue numbers for each CPU
+    memb_arr[-1] = n_catls
+    ## Tuples of the ID of each catalogue
+    memb_tuples = num.asarray([(memb_arr[xx], memb_arr[xx+1])
+                            for xx in range(memb_arr.size-1)])
+    ## Assigning `memb_tuples` to function `multiprocessing_catls`
+    procs = []
+    for ii in range(len(memb_tuples)):
+        ## Defining `proc` element
+        proc = Process(target=multiprocessing_catls,
+                        args=(pos_coords_mocks[ii], param_dict, proj_dict))
+        # Appending to main `procs` list
+        procs.append(proc)
+        proc.start()
+    ##
+    ## Joining `procs`
+    for proc in procs:
+        proc.join()
+    ##
+    ## Reinitializing `param_dict` to None
+    param_dict = None
 
 
 
+def multiprocessing_catls(pos_coords_mocks_ii, param_dict, proj_dict):
+    """
+    Distributes the analyis of the creation of mock catalogues into 
+    more than 1 processor
+    """
 
 
 ## -----------| Halobias-related functions |----------- ##

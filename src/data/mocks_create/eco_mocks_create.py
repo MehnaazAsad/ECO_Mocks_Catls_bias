@@ -788,6 +788,7 @@ def survey_specs(param_dict, cosmo_model):
     coord_dict['s1_side'    ] = s1_side
     coord_dict['d_th'       ] = d_th
     coord_dict['h2'         ] = h2
+    coord_dict['r_arr'      ] = r_arr
     ##
     ## Resolve-B Mr limit
     mr_eco   = -17.33
@@ -821,24 +822,81 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
         `Data Science` Cookiecutter template.
     """
     ## Coordinates dictionary
-    coord_dict = param_dict['coord_dict']
+    coord_dict = param_dict['coord_dict'].copy()
+    ## Coordinate and Dataframe lists
+    pos_coords_mocks = []
     ###### ----- X-Y Upper Left Mocks  -----######
     clf_ul_pd = copy.deepcopy(clf_pd)
     # Coordinates
     ra_min_ul  = 90. - coord_dict['ra_range']
     ra_max_ul  = 90.
     ra_diff_ul = coord_dict['ra_max_real'] - ra_max_ul
-    gap_ul   = 20.
-    x_init_ul = 0.0 + 10.
-    y_init_ul = param_dict['size_cube'] - coord_dict['ra_max'] - 5.
-    z_init_ul = 10.
-    # z_delta_ul = gap_ul + 
+    gap_ul     = 20.
+    x_init_ul  = 10.
+    y_init_ul  = param_dict['size_cube'] - coord_dict['r_arr'][1] - 5.
+    z_init_ul  = 10.
+    z_delta_ul = gap_ul + coord_dict['d_th']
+    if coord_dict['dec_min'] < 0.:
+        z_init_ul += num.abs(coord_dict['dec_min'])
+    z_mocks_n_ul = int(num.floor(param_dict['size_cube']/z_delta_ul))
+    ## Determining positions
+    for kk in range(z_mocks_n_ul):
+        pos_coords_mocks.append([x_init_ul, y_init_ul, z_init_ul])#, clf_ul_pd])
+        z_init_ul += z_delta_ul
     ###### ----- X-Y Upper Right Mocks -----######
     clf_ur_pd = copy.deepcopy(clf_pd)
+    # Coordinates
+    x_init_ur = param_dict['size_cube'] - coord_dict['r_arr'][1] - 5.
+    y_init_ur = param_dict['size_cube'] - coord_dict['r_arr'][1] - 10.
+    z_init_ur = 10.
+    if coord_dict['dec_min'] < 0.:
+        z_init_ur += num.abs(coord_dict['dec_min'])
+    z_mocks_n_ur = int(num.floor(param_dict['size_cube']/z_delta_ul))
+    ## Determining positions
+    for kk in range(z_mocks_n_ur):
+        pos_coords_mocks.append([x_init_ur, y_init_ur, z_init_ur])#, clf_ur_pd])
+        z_init_ur += z_delta_ul
     ###### ----- X-Y Lower Left Mocks  -----######
     clf_ll_pd = copy.deepcopy(clf_pd)
+    ## Changing geometry
+    coord_dict['ra_min'] = 180.
+    coord_dict['ra_max'] = 180. + coord_dict['ra_range']
+    coord_dict['ra_diff'] = coord_dict['ra_max_real'] - coord_dict['ra_max']
+    assert( (coord_dict['ra_min'] < coord_dict['ra_max']) and 
+            (coord_dict['ra_min'] <= 360.) and
+            (coord_dict['ra_max'] <= 360.))
+    ## New positions
+    x_init_ll = coord_dict['r_arr'][1]
+    y_init_ll = coord_dict['r_arr'][1]
+    z_init_ll = 10.
+    if coord_dict['dec_min'] < 0.:
+        z_init_ll += num.abs(coord_dict['dec_min'])
+    z_mocks_n_ll = int(num.floor(param_dict['size_cube']/z_delta_ul))
+    ## Saving new positions
+    for kk in range(z_mocks_n_ll):
+        pos_coords_mocks.append([x_init_ll, y_init_ll, z_init_ll])#, clf_ll_pd])
+        z_init_ll += z_delta_ul
     ###### ----- X-Y Lower Right Mocks -----######
     clf_lr_pd = copy.deepcopy(clf_pd)
+    # Changing geometry
+    coord_dict['ra_min'] = 270. - coord_dict['ra_range']
+    coord_dict['ra_max'] = 270.
+    coord_dict['ra_diff'] = coord_dict['ra_max_real'] - coord_dict['ra_max']
+    # New positions
+    x_init_lr = coord_dict['r_arr'][1]
+    x_init_lr = param_dict['size_cube'] - 10.
+    y_init_lr = coord_dict['r_arr'][1] - 15.
+    z_init_lr = 10.
+    if coord_dict['dec_min'] < 0.:
+        z_init_lr += num.abs(coord_dict['dec_min'])
+    z_mocks_n_lr = int(num.floor(param_dict['size_cube']/z_delta_ul))
+    ## Saving new positions
+    for kk in range(z_mocks_n_lr):
+        pos_coords_mocks.append([x_init_lr, y_init_lr, z_init_lr])#, clf_lr_pd])
+        z_init_lr += z_delta_ul
+
+
+
 
 
 ## -----------| Halobias-related functions |----------- ##

@@ -759,15 +759,14 @@ def survey_specs(param_dict, cosmo_model):
                                 cosmo_model.comoving_distance(z_arr).value)
     ##
     ## Survey height, and other geometrical factors
-    (   h_total,
-        s1_top ,
-        s2     ,
-        h1     ) = cu.geometry_calc(r_arr[0], r_arr[1], ra_range)
-    (   h_side ,
-        s1_side,
-        d_th   ,
-        h2     ) = cu.geometry_calc(r_arr[0], r_arr[1], dec_range)
-
+    # (   h_total,
+    #     s1_top ,
+    #     s2     ,
+    #     h1     ) = cu.geometry_calc(r_arr[0], r_arr[1], ra_range)
+    # (   h_side ,
+    #     s1_side,
+    #     d_th   ,
+    #     h2     ) = cu.geometry_calc(r_arr[0], r_arr[1], dec_range)
     ##
     # ra_dec dictionary
     coord_dict = {}
@@ -781,14 +780,14 @@ def survey_specs(param_dict, cosmo_model):
     coord_dict['ra_max'     ] = ra_max
     coord_dict['ra_diff'    ] = ra_diff
     # Height and other geometrical objects
-    coord_dict['h_total'    ] = h_total
-    coord_dict['s1_top'     ] = s1_top
-    coord_dict['s2'         ] = s2
-    coord_dict['h1'         ] = h1
-    coord_dict['h_side'     ] = h_side
-    coord_dict['s1_side'    ] = s1_side
-    coord_dict['d_th'       ] = d_th
-    coord_dict['h2'         ] = h2
+    # coord_dict['h_total'    ] = h_total
+    # coord_dict['s1_top'     ] = s1_top
+    # coord_dict['s2'         ] = s2
+    # coord_dict['h1'         ] = h1
+    # coord_dict['h_side'     ] = h_side
+    # coord_dict['s1_side'    ] = s1_side
+    # coord_dict['d_th'       ] = d_th
+    # coord_dict['h2'         ] = h2
     ##
     ## Resolve-B Mr limit
     mr_eco   = -17.33

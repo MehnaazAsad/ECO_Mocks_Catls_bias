@@ -780,7 +780,7 @@ def survey_specs(param_dict, cosmo_model):
     coord_dict['ra_min'     ] = ra_min
     coord_dict['ra_max'     ] = ra_max
     coord_dict['ra_diff'    ] = ra_diff
-
+    # Height and other geometrical objects
     coord_dict['h_total'    ] = h_total
     coord_dict['s1_top'     ] = s1_top
     coord_dict['s2'         ] = s2

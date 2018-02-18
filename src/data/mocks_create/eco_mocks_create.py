@@ -833,7 +833,7 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
     x_init_ul = 0.0 + 10.
     y_init_ul = param_dict['size_cube'] - coord_dict['ra_max'] - 5.
     z_init_ul = 10.
-    z_delta_ul = gap_ul + 
+    # z_delta_ul = gap_ul + 
     ###### ----- X-Y Upper Right Mocks -----######
     clf_ur_pd = copy.deepcopy(clf_pd)
     ###### ----- X-Y Lower Left Mocks  -----######

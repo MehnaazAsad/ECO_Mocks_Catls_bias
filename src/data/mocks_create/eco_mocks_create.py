@@ -780,14 +780,14 @@ def survey_specs(param_dict, cosmo_model):
     coord_dict['ra_max'     ] = ra_max
     coord_dict['ra_diff'    ] = ra_diff
     # Height and other geometrical objects
-    # coord_dict['h_total'    ] = h_total
-    # coord_dict['s1_top'     ] = s1_top
-    # coord_dict['s2'         ] = s2
-    # coord_dict['h1'         ] = h1
-    # coord_dict['h_side'     ] = h_side
-    # coord_dict['s1_side'    ] = s1_side
-    # coord_dict['d_th'       ] = d_th
-    # coord_dict['h2'         ] = h2
+    coord_dict['h_total'    ] = h_total
+    coord_dict['s1_top'     ] = s1_top
+    coord_dict['s2'         ] = s2
+    coord_dict['h1'         ] = h1
+    coord_dict['h_side'     ] = h_side
+    coord_dict['s1_side'    ] = s1_side
+    coord_dict['d_th'       ] = d_th
+    coord_dict['h2'         ] = h2
     ##
     ## Resolve-B Mr limit
     mr_eco   = -17.33

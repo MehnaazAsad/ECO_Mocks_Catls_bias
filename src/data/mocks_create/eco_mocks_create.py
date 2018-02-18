@@ -172,18 +172,6 @@ def get_parser():
                         help='Median Redshift of the survey',
                         type=float,
                         default=0.)
-    # Minimum velocity of the survey
-    parser.add_argument('-czmin',
-                        dest='czmin',
-                        help='Minimum velocity of the survey (c times zmin)',
-                        type=float,
-                        default=2532.)
-    # Maximum velocity of the survey
-    parser.add_argument('-czmax',
-                        dest='czmax',
-                        help='Maximum velocity of the survey (c times zmax)',
-                        type=float,
-                        default=7470.)
     # Type of survey
     parser.add_argument('-survey',
                         dest='survey',

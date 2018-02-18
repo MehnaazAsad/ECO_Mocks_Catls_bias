@@ -165,8 +165,6 @@ def geometry_calc(dist_1, dist_2, alpha):
 
     h1: float
 
-    h2: float
-
     s1: float
 
     s2: float
@@ -181,7 +179,7 @@ def geometry_calc(dist_1, dist_2, alpha):
     h2      = dist_1 - h1
     h_total = h2 + (dist_2 - dist_1)
 
-    return h_total
+    return h_total, h1, s1, s2
 
 def mock_cart_to_spherical_coords(x, y, z, dist):
     """

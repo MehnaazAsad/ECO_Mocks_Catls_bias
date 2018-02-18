@@ -759,14 +759,14 @@ def survey_specs(param_dict, cosmo_model):
                                 cosmo_model.comoving_distance(z_arr).value)
     ##
     ## Survey height, and other geometrical factors
-    # (   h_total,
-    #     s1_top ,
-    #     s2     ,
-    #     h1     ) = cu.geometry_calc(r_arr[0], r_arr[1], ra_range)
-    # (   h_side ,
-    #     s1_side,
-    #     d_th   ,
-    #     h2     ) = cu.geometry_calc(r_arr[0], r_arr[1], dec_range)
+    (   h_total,
+        h1     ,
+        s1_top ,
+        s2     ) = cu.geometry_calc(r_arr[0], r_arr[1], ra_range)
+    (   h_side ,
+        h2     ,
+        s1_side,
+        d_th   ) = cu.geometry_calc(r_arr[0], r_arr[1], dec_range)
     ##
     # ra_dec dictionary
     coord_dict = {}

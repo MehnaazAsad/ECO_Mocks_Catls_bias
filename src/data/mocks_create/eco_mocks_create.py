@@ -297,12 +297,16 @@ def add_to_dict(param_dict):
     url_catl = 'http://lss.phy.vanderbilt.edu/groups/data_eco_vc/'
     url_checker(url_catl)
     ##
+    ## Plotting constants
+    plot_dict = plot_const()
+    ##
     ## Adding to `param_dict`
     param_dict['cens'         ] = cens
     param_dict['sats'         ] = sats
     param_dict['url_catl'     ] = url_catl
     param_dict['hod_dict'     ] = hod_dict
     param_dict['choice_survey'] = choice_survey
+    param_dict['plot_dict'    ] = plot_dict
 
     return param_dict
 
@@ -401,6 +405,25 @@ def directory_skeleton(param_dict, proj_dict):
     proj_dict['phot_dir'        ] = phot_dir
 
     return proj_dict
+
+def plot_const():
+    """
+    Returns constants for plotting
+
+    Returns
+    -------
+    plot_dict: python dictionary
+        dictionary with text labels, fontsizes, etc.
+    """
+    # Size labels
+    size_label = 20
+    size_title = 25
+    # Dictionary
+    plot_dict = {}
+    plot_dict['size_label'] = size_xlabel
+    plot_dict['title'     ] = size_title
+
+    return plot_dict
 
 ## -----------| Survey-related functions |----------- ##
 
@@ -946,14 +969,28 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
     ## Reinitializing `param_dict` to None
     param_dict = None
 
-
-
 def multiprocessing_catls(pos_coords_mocks_ii, param_dict, proj_dict):
     """
     Distributes the analyis of the creation of mock catalogues into 
     more than 1 processor
-    """
 
+    Parameters
+    -----------
+    pos_coords_mocks_ii: tuple, shape (4,)
+        tuple with the positons coordinates, coordinate dictionary, 
+        and DataFrame to be used
+
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        dictionary with info of the project that uses the
+        `Data Science` Cookiecutter template.
+
+    Returns
+    -----------
+    """
+    ## Reading in input parameters
 
 ## -----------| Halobias-related functions |----------- ##
 

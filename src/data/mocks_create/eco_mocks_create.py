@@ -420,7 +420,7 @@ def plot_const():
     size_title = 25
     # Dictionary
     plot_dict = {}
-    plot_dict['size_label'] = size_xlabel
+    plot_dict['size_label'] = size_label
     plot_dict['title'     ] = size_title
 
     return plot_dict
@@ -1438,10 +1438,6 @@ def main(args):
     ## Carving out geometry of Survey and carrying out the analysis
     if param_dict['survey'] == 'ECO':
         eco_geometry_mocks(clf_pd, param_dict, proj_dict)
-
-
-
-
 
 
 

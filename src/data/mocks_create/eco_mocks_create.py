@@ -1651,7 +1651,7 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
                             for xx in range(memb_arr.size-1)])
     ## Assigning `memb_tuples` to function `multiprocessing_catls`
     procs = []
-    for ii in range(len(memb_tuples)):
+    for ii in range(len(memb_tuples[0])):
         ## Defining `proc` element
         proc = Process(target=multiprocessing_catls,
                         args=(  memb_tuples[ii], pos_coords_mocks, param_dict, 
@@ -1787,6 +1787,7 @@ def catl_create_main(zz_mock, pos_coords_mocks_zz, param_dict, proj_dict):
     ## Writing output files - `Normal Catalogues`
     writing_to_output_file(mockgal_pd, mockgroup_pd, zz_mock,
         param_dict, proj_dict, perf_catl=False)
+
 
 ## -----------| Halobias-related functions |----------- ##
 

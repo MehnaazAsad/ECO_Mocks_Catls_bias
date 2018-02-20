@@ -2169,7 +2169,7 @@ def main(args):
     ## Survey Details
     param_dict = survey_specs(param_dict)
     ## Halo mass function
-    hmf_pd = hmf_calc(param_dict['cosmo_model'], proj_dict, param_dict,
+    param_dict = hmf_calc(param_dict['cosmo_model'], proj_dict, param_dict,
         Mmin=6., Mmax=16.01, dlog10m=1.e-3, hmf_model=param_dict['hmf_model'])
     ##
     ## Downloading files

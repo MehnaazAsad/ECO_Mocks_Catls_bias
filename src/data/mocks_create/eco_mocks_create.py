@@ -1853,9 +1853,6 @@ def hb_file_construction_extras(param_dict, proj_dict):
     param_dict: python dictionary
         dictionary with updated 'hb_file_mod' key, which is the 
         path to the file with number of galaxies per halo ID.
-
-    hb_pd: pandas DataFrame
-        pandas DataFrame with information from the Halobias file `hb_local`
     """
     Prog_msg = param_dict['Prog_msg']
     ## Local halobias file
@@ -1909,6 +1906,7 @@ def hb_file_construction_extras(param_dict, proj_dict):
     ## Saving to file
     hb_pd.to_csv(hb_file_mod, sep=" ", columns=hb_cols, 
         index=False, header=False)
+    cu.File_Exists(hb_file_mod)
     ## Assigning to `param_dict`
     param_dict['hb_file_mod'] = hb_file_mod
     param_dict['hb_cols'    ] = hb_cols
@@ -1923,7 +1921,7 @@ def hb_file_construction_extras(param_dict, proj_dict):
     print('\n{0} Halo_ngal file: {1}'.format(Prog_msg, hb_file_mod))
     print('{0} Creating file with Ngals in each halo ... Complete'.format(Prog_msg))
 
-    return param_dict, hb_pd
+    return param_dict
 
 def clf_assignment(param_dict, proj_dict, choice_survey=2):
     """
@@ -2300,12 +2298,30 @@ def mockcatls_simbox_plot(param_dict, proj_dict, catl_ext='.hdf5',
     ax1.grid(True, color='gray', which='major', linestyle='--')
     ax2.grid(True, color='gray', which='major', linestyle='--')
     ax3.grid(True, color='gray', which='major', linestyle='--')
+    # Major ticks
+    major_ticks = num.arange(0,param_dict['size_cube']+1, 20)
+    ax1.set_xticks(major_ticks)
+    ax1.set_yticks(major_ticks)
+    ax2.set_xticks(major_ticks)
+    ax2.set_yticks(major_ticks)
+    ax3.set_xticks(major_ticks)
+    ax3.set_yticks(major_ticks)
     # Colormap
     cm      = plt.get_cmap('gist_rainbow')
     col_arr = [cm(ii/float(n_catls)) for ii in range(n_catls)]
     # Title
     title_obj = fig.suptitle(fig_title, fontsize=plot_dict['title'])
     title_obj.set_y(1.04)
+    ##
+    ## Looping over different catalogues
+    for kk, catl_kk in enumerate(tqdm(catl_path_arr)):
+        # Reading parameters
+        catl_pd = cu.read_hdf5_file_to_pandas_DF(catl_kk)
+        # Galaxy indices
+
+    
+
+
     # Adjusting space
     plt.subplots_adjust(top=0.86)
     plt.tight_layout()
@@ -2366,8 +2382,7 @@ def main(args):
     ## Redshift and Comoving distance
     param_dict = z_comoving_calc(param_dict, proj_dict)
     ## Halobias Extras file - Modified Halobias file
-    (   param_dict,
-        hb_pd     ) = hb_file_construction_extras(param_dict, proj_dict)
+    param_dict = hb_file_construction_extras(param_dict, proj_dict)
     ## Conditional Luminosity Function
     clf_pd = clf_assignment(param_dict, proj_dict)
     ## Distance from Satellites to Centrals

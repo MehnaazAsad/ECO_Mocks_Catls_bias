@@ -1231,7 +1231,7 @@ def catl_drop_cols(mockgal_pd, mockgroup_pd, param_dict):
     gal_pd   = mockgal_pd.copy()
     group_pd = mockgroup_pd.copy()
     ## Columns
-    gal_cols = 
+    # gal_cols = 
 
 
 ## --------- Halo Rvir calculation ------------##

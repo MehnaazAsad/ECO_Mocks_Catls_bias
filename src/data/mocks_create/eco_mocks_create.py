@@ -871,6 +871,9 @@ def makemock_catl(clf_ii, coord_dict_ii, zz_mock, param_dict, proj_dict):
     ## Saving new array to DataFrame
     mock_pd.loc['ra_mod'] = ra_new_arr
     ##
+    ## Assert that coordinates fall within Survey limits
+    # assert((mock_pd['ra'].min() >= coord_dict_ii['ra_min_real']))
+    ##
     ## Saving file to Pandas DataFrame
     cu.pandas_df_to_hdf5_file(mock_pd, mock_catl_pd_file, key='galcatl')
 
@@ -907,6 +910,10 @@ def group_finding(mock_pd, param_dict, proj_dict, file_ext='csv'):
     ## Constants
     # Speed of light - in km/s
     speed_c = param_dict['speed_c']
+    ##
+    ## Running FoF
+    # Defining files for FoF output and Mock coordinates
+
 
 
 

@@ -911,6 +911,10 @@ def makemock_catl(clf_ii, coord_dict_ii, zz_mock, param_dict, proj_dict):
     # mr_idx = clf_ii.loc[clf_ii['M_r'] != 0.].index.values
     # ra_dec_mr_idx = num.intersect1d(num.intersect1d(ra_idx, dec_idx), mr_idx)
     ##
+    ## Velocity limits
+    mock_pd = mock_pd.loc[  (mock_pd['cz'] >= param_dict['czmin']) & 
+                            (mock_pd['cz'] <= param_dict['czmax'])]
+    ##
     ## New Catalogue
     if len(mock_pd) != 0:
         ## Chaning RA values
@@ -943,7 +947,10 @@ def makemock_catl(clf_ii, coord_dict_ii, zz_mock, param_dict, proj_dict):
     mock_pd.reset_index(inplace=True, drop=True)
     ##
     ## Assert that coordinates fall within Survey limits
-    # assert((mock_pd['ra'].min() >= coord_dict_ii['ra_min_real']))
+    assert( (mock_pd['ra' ].min() >= coord_dict_ii['ra_min_real']) &
+            (mock_pd['ra' ].max() <= coord_dict_ii['ra_max_real']) &
+            (mock_pd['dec'].min() >= coord_dict_ii['dec_min'    ]) &
+            (mock_pd['dec'].max() <= coord_dict_ii['dec_max'    ]))
     ##
     ## Saving file to Pandas DataFrame
     cu.pandas_df_to_hdf5_file(mock_pd, mock_catl_pd_file, key='galcatl')

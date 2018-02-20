@@ -181,21 +181,15 @@ def geometry_calc(dist_1, dist_2, alpha):
 
     return h_total, h1, s1, s2
 
-def mock_cart_to_spherical_coords(x, y, z, dist):
+def mock_cart_to_spherical_coords(cart_arr, dist):
     """
     Computes the right ascension and declination for the given 
     point in (x,y,z) position
 
     Parameters
     -----------
-    x: float
-        x-coordinate of the point
-
-    y: float
-        y-coordinate of the point
-
-    z: float
-        z-coordinate of the point
+    cart_arr: numpy.ndarray, shape (3,)
+        array with (x,y,z) positions
 
     dist: float
         dist to the point from observer's position
@@ -209,10 +203,12 @@ def mock_cart_to_spherical_coords(x, y, z, dist):
         declination of the point on the sky
     """
     ## Reformatting coordinates
-    x_val = float(x)/dist
-    y_val = float(y)/dist
-    z_val = float(z)/dist
-    dist  = float(dist)
+    # Cartesian coordinates
+    (   x_val,
+        y_val,
+        z_val) = cart_arr/float(dist)
+    # Distance to object
+    dist = float(dist)
     ## Declination
     dec_val = 90. - num.degrees(num.arccos(z_val))
     ## Right ascension

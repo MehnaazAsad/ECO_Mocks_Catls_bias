@@ -820,7 +820,7 @@ def makemock_catl(clf_ii, coord_dict_ii, zz_mock, param_dict, proj_dict):
                                             zz_mock))
     ## Number of galaies
     clf_ngal    = len(clf_ii)
-    speed_light = param_dict['const_dict']['c']
+    speed_c = param_dict['const_dict']['c']
     ## Distances from observer to galaxies
     z_como_pd   = param_dict['z_como_pd']
     dc_max      = z_como_pd['d_como'].max()
@@ -845,7 +845,7 @@ def makemock_catl(clf_ii, coord_dict_ii, zz_mock, param_dict, proj_dict):
         r_dist = (num.sum(cart_gals[kk]**2))**.5
         assert(r_dist <= dc_max)
         ## Velocity in km/s
-        cz_local = speed_light * dc_z_interp(r_dist)
+        cz_local = speed_c * dc_z_interp(r_dist)
         cz_val   = cz_local
         ## Right Ascension and declination
         (   ra_kk,
@@ -888,7 +888,7 @@ def makemock_catl(clf_ii, coord_dict_ii, zz_mock, param_dict, proj_dict):
         ra_min_mod = coord_dict_ii['ra_min'] + 360.
         mock_pd    = clf_ii.loc[(clf_ii['dec'] >= coord_dict_ii['dec_min']) &
                                 (clf_ii['dec'] <= coord_dict_ii['dec_max']) &
-                                (clf_ii['M_r'] != 0.)]
+                                (clf_ii['M_r'] != 0.)].copy()
         mock_pd    = mock_pd.loc[~( (mock_pd['ra'] < ra_min_mod) &
                                     (mock_pd['ra'] > coord_dict_ii['ra_max']))]
         # ra_idx1 = clf_ii.loc[(clf_ii['ra'] < (coord_dict_ii['ra_min'] + 360))&
@@ -901,7 +901,7 @@ def makemock_catl(clf_ii, coord_dict_ii, zz_mock, param_dict, proj_dict):
                              (clf_ii['ra'] <= coord_dict_ii['ra_max']) &
                              (clf_ii['dec'] >= coord_dict_ii['dec_min']) &
                              (clf_ii['dec'] <= coord_dict_ii['dec_max']) &
-                             (clf_ii['M_r'] != 0.)]
+                             (clf_ii['M_r'] != 0.)].copy()
         # ra_idx = clf_ii.loc[(clf_ii['ra'] >= coord_dict_ii['ra_min']) &
         #                     (clf_ii['ra'] <= coord_dict_ii['ra_max'])].index
         # ra_idx = ra_idx.values
@@ -915,8 +915,8 @@ def makemock_catl(clf_ii, coord_dict_ii, zz_mock, param_dict, proj_dict):
     if len(mock_pd) != 0:
         ## Chaning RA values
         if coord_dict_ii['ra_min'] < 0.:
-            ra_min_limit = coord_dict_ii['ra_min'] + 360.
-            ra_new_arr   = mock_pd['ra'].values
+            ra_min_limit  = coord_dict_ii['ra_min'] + 360.
+            ra_new_arr    = mock_pd['ra'].values
             ra_except_idx = num.where(   (ra_new_arr >= ra_min_limit) &
                                         (ra_new_arr <= 360.))[0]
             ra_new_arr[ra_except_idx] += (-360.) + coord_dict_ii['ra_diff']
@@ -927,14 +927,17 @@ def makemock_catl(clf_ii, coord_dict_ii, zz_mock, param_dict, proj_dict):
             if len(ra_neg_idx) != 0.:
                 ra_new_arr[ra_neg_idx] += 360.
         elif coord_dict_ii['ra_min'] >= 0.:
-            ra_new_arr = mock_pd['ra'].values
+            ra_new_arr  = mock_pd['ra'].values
             ra_new_arr += coord_dict_ii['ra_diff']
-            ra_neg_idx = num.where(ra_new_arr < 0.)[0]
+            ra_neg_idx  = num.where(ra_new_arr < 0.)[0]
             if len(ra_neg_idx) != 0:
                 ra_new_arr[ra_neg_idx] += 360.
     ##
     ## Saving new array to DataFrame
-    mock_pd.loc['ra_mod'] = ra_new_arr
+    ra_orig_arr = mock_pd['ra'].values
+    # Assigning new values for RA
+    mock_pd.loc[:,'ra'     ] = ra_new_arr
+    mock_pd.loc[:,'ra_orig'] = ra_orig_arr
     ##
     ## Resetting indices
     mock_pd.reset_index(inplace=True, drop=True)
@@ -981,7 +984,7 @@ def group_finding(mock_pd, mock_zz_file, param_dict, proj_dict,
     """
     ## Constants
     # Speed of light - in km/s
-    speed_c = param_dict['speed_c']
+    speed_c = param_dict['const_dict']['c']
     ##
     ## Running FoF
     # File prefix
@@ -1117,7 +1120,7 @@ def group_mass_assignment(mockgal_pd, mockgroup_pd, param_dict, proj_dict):
     ## Looping over galaxy groups
     # Mstar-based
     if param_dict['catl_type'] == 'mstar':
-        for group_zz in range(n_groups):
+        for group_zz in tqdm(range(n_groups)):
             ## Stellar mass
             group_prop = gal_pd.loc[gal_pd['groupid']==group, prop_gal]
             group_log_prop_tot = num.log10(num.sum(10**group_prop))
@@ -1125,10 +1128,10 @@ def group_mass_assignment(mockgal_pd, mockgroup_pd, param_dict, proj_dict):
             group_prop_arr[group_zz] = group_log_prop_tot
     # Luminosity-based
     elif param_dict['catl_type'] == 'mr':
-        for group_zz in range(n_groups):
+        for group_zz in tqdm(range(n_groups)):
             ## Total abs. magnitude of the group
             group_prop = gal_pd.loc[gal_pd['groupid']==group_zz, prop_gal]
-            group_prop_tot = Mr_group(group_prop)
+            group_prop_tot = Mr_group_calc(group_prop)
             ## Saving to array
             group_prop_arr[group_zz] = group_prop_tot
     ##
@@ -1147,8 +1150,8 @@ def group_mass_assignment(mockgal_pd, mockgroup_pd, param_dict, proj_dict):
                                     hmf_pd,
                                     volume1=param_dict['survey_vol'],
                                     reverse=reverse_opt,
-                                    var_name='logM',
-                                    dens_name='ngtm')
+                                    dict2_names=['logM', 'ngtm'],
+                                    dens2_opt=True)
     # Assigning to DataFrame
     group_pd.loc[:, 'M_group'] = Mh_ab
     ###
@@ -1165,7 +1168,7 @@ def group_mass_assignment(mockgal_pd, mockgroup_pd, param_dict, proj_dict):
     g_galtype_groups            = num.ones(n_groups)*Sats
     ##
     ## Looping over galaxy groups
-    for zz in range(n_groups):
+    for zz in tqdm(range(n_groups)):
         gals_g = gal_pd.loc[gal_pd['groupid']==zz]
         ## Determining group galaxy type
         gals_g_max = gals_g.loc[gals_g[prop_gal_abs]==gals_g[prop_gal_abs].max()]
@@ -1191,6 +1194,38 @@ def group_mass_assignment(mockgal_pd, mockgroup_pd, param_dict, proj_dict):
         left_index=True, right_index=True)
 
     return mockgal_pd_new, mockgroup_pd_new
+
+def catl_drop_cols(mockgal_pd, mockgroup_pd, param_dict):
+    """
+    Drops certain columns from both DataFrames
+
+    Parameters
+    -----------
+    mockgal_pd: pandas DataFrame
+        DataFrame containing information for each mock galaxy.
+        Includes galaxy properties + group ID
+
+    mockgroup_pd: pandas DataFrame
+        DataFame containing information for each galaxy group
+
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    Returns
+    -----------
+    mockgal_pd: pandas DataFrame
+        Updated version of the DataFrame containing information for each 
+        mock galaxy.
+
+    mockgroup_pd: pandas DataFrame
+        Updated DataFame containing information for each galaxy group
+    """
+    ## Copies of DataFrames
+    gal_pd   = mockgal_pd.copy()
+    group_pd = mockgroup_pd.copy()
+    ## Columns
+    gal_cols = 
+
 
 ## --------- Halo Rvir calculation ------------##
 
@@ -1239,7 +1274,7 @@ def halos_rvir_calc(mockgal_pd, param_dict, catl_sim_eq=False):
     haloid_z = num.array([gal_pd.loc[gal_pd['haloid']==xx,'cz'].mean() for \
                         xx in haloid_arr])/speed_c.value
     ## Halo masses
-    haloid_mass = num.array([gal_pd.loc[gal_pd['haloid']==xx,'M_h'].mean() for \
+    haloid_mass = num.array([gal_pd.loc[gal_pd['haloid']==xx,'loghalom'].mean() for \
                         xx in haloid_arr])
     ## Halo rvir - in Mpc/h
     rvir_num = (10**(haloid_mass)*u.Msun) * G
@@ -1740,6 +1775,8 @@ def catl_create_main(zz_mock, pos_coords_mocks_zz, param_dict, proj_dict):
     ## Halo Rvir
     mockgal_pd = halos_rvir_calc(mockgal_pd, param_dict)
     ##
+    ## Dropping columns from `mockgal_pd` and `mockgroup_pd`
+    ##
     ## Writing output files - `Normal Catalogues`
     writing_to_output_file(mockgal_pd, mockgroup_pd, zz_mock,
         param_dict, proj_dict, perf_catl=False)
@@ -2130,8 +2167,25 @@ def mr_survey_matching(clf_pd, param_dict, proj_dict):
 
     return clf_galprop_pd
 
-## -----------| Mock-catalogues-related functions |----------- ##
+## -----------| Plotting-related functions |----------- ##
 
+def mockcatls_simbox_plot(param_dict, proj_dict, catl_ext='.hdf5'):
+    """
+    Plots the distribution of the mock catalogues in the simulation box
+
+    Parameters
+    ------------
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        dictionary with info of the project that uses the
+        `Data Science` Cookiecutter template.
+    """
+    ## List of catalogues
+    catl_path_arr = cu.Index(   proj_dict['mock_cat_mc'], catl_ext)
+    n_catls       = len(catl_path_arr)
+    ## 
 
 
 
@@ -2189,6 +2243,7 @@ def main(args):
     ## Carving out geometry of Survey and carrying out the analysis
     if param_dict['survey'] == 'ECO':
         eco_geometry_mocks(clf_pd, param_dict, proj_dict)
+    ## Plotting different catalogues in simulation box
 
 # Main function
 if __name__=='__main__':

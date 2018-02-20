@@ -1337,17 +1337,6 @@ def writing_to_output_file(mockgal_pd, mockgroup_pd, zz_mock,
     print('{0} gal_file  : {1}'.format(param_dict['Prog_msg'], gal_file))
     print('{0} group_file: {1}'.format(param_dict['Prog_msg'], group_file))
 
-
-
-
-
-
-
-
-
-
-
-
 ## -----------| Survey-related functions |----------- ##
 
 def survey_specs(param_dict):
@@ -1754,10 +1743,6 @@ def catl_create_main(zz_mock, pos_coords_mocks_zz, param_dict, proj_dict):
     ## Writing output files - `Normal Catalogues`
     writing_to_output_file(mockgal_pd, mockgroup_pd, zz_mock,
         param_dict, proj_dict, perf_catl=False)
-
-
-
-
 
 ## -----------| Halobias-related functions |----------- ##
 
@@ -2204,8 +2189,6 @@ def main(args):
     ## Carving out geometry of Survey and carrying out the analysis
     if param_dict['survey'] == 'ECO':
         eco_geometry_mocks(clf_pd, param_dict, proj_dict)
-
-
 
 # Main function
 if __name__=='__main__':

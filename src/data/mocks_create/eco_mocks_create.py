@@ -1650,6 +1650,7 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
     memb_tuples = num.asarray([(memb_arr[xx], memb_arr[xx+1])
                             for xx in range(memb_arr.size-1)])
     ## Assigning `memb_tuples` to function `multiprocessing_catls`
+    print('{0} Creating Mock Catalogues ....'.format(param_dict['Prog_msg']))
     procs = []
     for ii in range(len(memb_tuples[0])):
         ## Defining `proc` element
@@ -1665,6 +1666,8 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
         proc.join()
     ##
     ## Reinitializing `param_dict` to None
+    print('{0} Creating Mock Catalogues .... Done'.format(
+        param_dict['Prog_msg']))
     param_dict = None
 
 def multiprocessing_catls(memb_tuples_ii, pos_coords_mocks, param_dict, 

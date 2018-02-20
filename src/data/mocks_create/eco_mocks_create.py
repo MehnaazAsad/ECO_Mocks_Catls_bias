@@ -477,34 +477,47 @@ def val_consts():
 
 ## -----------| Survey-related functions |----------- ##
 
-def cosmo_create(cosmo_choice='Planck', H0=100., Om0=0.25, Ob0=0.04,
-    Tcmb0=2.7255):
+def cosmo_create(param_dict, H0=100., Om0=0.25, Ob0=0.04, Tcmb0=2.7255):
     """
     Creates instance of the cosmology used throughout the project.
 
     Parameters
     ----------
-    cosmo_choice: string, optional (default = 'Planck')
-        choice of cosmology
-        Options:
-            - Planck: Cosmology from Planck 2015
-            - LasDamas: Cosmology from LasDamas simulation
+    param_dict: python dictionary
+        dictionary with `project` variables and `cosmo_choice`
 
-    h: float, optional (default = 1.0)
-        value for small cosmological 'h'.
+    H0: float, optional (default = 100.)
+        value of the Hubble constant.
+        Units: km/s
+
+    Om0: float, optional (default = 0.25)
+        - value of `Omega Matter at z=0`
+        - Unitless
+        - Range [0,1]
+
+    Ob0: float, optional (default = 0.04)
+        - value of `Omega Baryon at z=0`
+        - Unitless
+
+    Tcmb0: float, optional (default = 2.7255)
+        temperature of the CMB at z=0
 
     Returns
-    ----------                  
-    cosmo_obj: astropy cosmology object
-        cosmology used throughout the project
+    ----------
+    param_dict: python dictionary
+        updated version of `param_dict` with new variables:
+            - `cosmo_params`: dictionary with cosmological parameters
+            - `cosmo_model`: astropy cosmology object
+                    cosmology used throughout the project
+            - `cosmo_hmf`: `hmf.cosmo.Cosmology` object
     """
     ## Checking cosmology choices
     cosmo_choice_arr = ['Planck', 'LasDamas']
-    assert(cosmo_choice in cosmo_choice_arr)
+    assert(param_dict['cosmo_choice'] in cosmo_choice_arr)
     ## Choosing cosmology
-    if cosmo_choice == 'Planck':
+    if param_dict['cosmo_choice'] == 'Planck':
         cosmo_model = astrocosmo.Planck15.clone(H0=H0)
-    elif cosmo_choice == 'LasDamas':
+    elif param_dict['cosmo_choice'] == 'LasDamas':
         cosmo_model = astrocosmo.FlatLambdaCDM(H0=H0, Om0=Om0, Ob0=Ob0, 
             Tcmb0=Tcmb0)
     ## Cosmo Paramters
@@ -516,8 +529,12 @@ def cosmo_create(cosmo_choice='Planck', H0=100., Om0=0.25, Ob0=0.04,
     cosmo_params['Ok0' ] = cosmo_model.Ok0
     ## HMF Cosmo Model
     cosmo_hmf = hmf.cosmo.Cosmology(cosmo_model=cosmo_model)
+    ## Saving to 'param_dict'
+    param_dict['cosmo_model' ] = cosmo_model
+    param_dict['cosmo_params'] = cosmo_params
+    param_dict['cosmo_hmf'   ] = cosmo_hmf
 
-    return cosmo_model, cosmo_hmf
+    return param_dict
 
 def hmf_calc(cosmo_model, proj_dict, param_dict, Mmin=10, Mmax=16, 
     dlog10m=1e-3, hmf_model='warren', ext='csv', sep=',', 
@@ -687,7 +704,7 @@ def download_files(param_dict, proj_dict):
 
     return param_dict
 
-def z_comoving_calc(param_dict, proj_dict, cosmo_model, 
+def z_comoving_calc(param_dict, proj_dict, 
     zmin=0, zmax=0.5, dz=1e-3, ext='csv', sep=','):
     """
     Computes the comoving distance of an object based on its redshift
@@ -701,20 +718,19 @@ def z_comoving_calc(param_dict, proj_dict, cosmo_model,
         dictionary with info of the project that uses the
         `Data Science` Cookiecutter template.
 
-    cosmo_model: astropy cosmology object
-        cosmology used throughout the project
-
     Returns
     ------------
     param_dict: python dictionary
         updated dictionary with `project` variables + `z_como_pd`, which 
         is the DataFrame with `z, d_comoving` in units of Mpc
     """
+    ## Cosmological model
+    cosmo_model = param_dict['cosmo_model']
     ## File
     z_comoving_file = os.path.join( proj_dict['cosmo_dir'],
                                     '{0}_H0_{1}_z_comoving.{2}'.format(
                                         param_dict['cosmo_choice'],
-                                        cosmo_model.H0.value,
+                                        param_dict['cosmo_params']['H0'],
                                         ext))
     if (os.path.exists(z_comoving_file)) and (param_dict['remove_files']):
         ## Removing file
@@ -1015,7 +1031,44 @@ def group_finding(mock_pd, mock_zz_file, param_dict, proj_dict,
 
     return mockgal_pd_merged, mockgroup_pd
 
+def group_mass_assignment(mockgal_pd, mockgroup_pd, param_dict, proj_dict):
+    """
+    Assigns a theoretical halo mass to the group based on a group property
 
+    Parameters
+    -----------
+    mockgal_pd: pandas DataFrame
+        DataFrame containing information for each mock galaxy.
+        Includes galaxy properties + group ID
+
+    mockgroup_pd: pandas DataFrame
+        DataFame containing information for each galaxy group
+
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        Dictionary with current and new paths to project directories
+
+    Returns
+    -----------
+    mockgal_pd_new: pandas DataFrame
+        Original info + abundance matched mass of the group, M_group
+
+    mockgroup_pd_new: pandas DataFrame
+        Original info of `mockgroup_pd' + abundance matched mass, M_group
+    """
+    ## Copies of DataFrames
+    gal_pd   = mockgal_pd.copy()
+    group_pd = mockgroup_pd.copy()
+    ## Constants
+    Cens     = int(1)
+    Sats     = int(0)
+    n_gals   = len(gal_pd  )
+    n_groups = len(group_pd)
+    ## Mass function for given cosmology
+    hmf_pd = hmf_calc(cosmo_model, proj_dict, param_dict, Mmin=6., Mmax=16.01,
+        dlog10m=1.e-3, hmf_model=param_dict['hmf_model'])
 
 
 
@@ -1029,7 +1082,7 @@ def group_finding(mock_pd, mock_zz_file, param_dict, proj_dict,
 
 ## -----------| Survey-related functions |----------- ##
 
-def survey_specs(param_dict, cosmo_model):
+def survey_specs(param_dict):
     """
     Provides the specifications of the survey being created
 
@@ -1038,14 +1091,13 @@ def survey_specs(param_dict, cosmo_model):
     param_dict: python dictionary
         dictionary with `project` variables
 
-    cosmo_model: astropy cosmology object
-        cosmology used throughout the project
-
     Returns
     ----------
     param_dict: python dictionary
         dictionary with the 'updated' project variables
     """
+    ## Cosmological model
+    cosmo_model = param_dict['cosmo_model']
     ## Redshift, volumen and r-mag limit for each survey
     if param_dict['survey'] == 'A':
         czmin      = 2532.
@@ -1422,6 +1474,11 @@ def catl_create_main(zz_mock, pos_coords_mocks_zz, param_dict, proj_dict):
     (   mockgal_pd  ,
         mockgroup_pd) = group_finding(  mock_pd, mock_zz_file, 
                                         param_dict, proj_dict)
+    ##
+    ## Group mass, group galaxy type, and total Mr/Mstar for groups
+    (   mockgal_pd  ,
+        mockgroup_pd) = group_mass_assignment(mockgal_pd, mockgroup_pd, 
+                            param_dict, proj_dict)
 
 
 
@@ -1848,19 +1905,15 @@ def main(args):
     print('\n'+50*'='+'\n')
     ##
     ## Cosmological model and Halo mass function
-    cosmo_model, cosmo_hmf = cosmo_create(param_dict['cosmo_choice'])
+    param_dict = cosmo_create(param_dict)
     ## Survey Details
-    param_dict = survey_specs(param_dict, cosmo_model)
-    ##
-    ## Mass function for given cosmology
-    hmf_pd = hmf_calc(cosmo_model, proj_dict, param_dict, Mmin=6., Mmax=16.01,
-        dlog10m=1.e-3, hmf_model=param_dict['hmf_model'])
+    param_dict = survey_specs(param_dict)
     ##
     ## Downloading files
     param_dict = download_files(param_dict, proj_dict)
     ##
     ## Redshift and Comoving distance
-    z_como_pd = z_comoving_calc(param_dict, proj_dict, cosmo_model)
+    z_como_pd = z_comoving_calc(param_dict, proj_dict)
     ## Halobias Extras file - Modified Halobias file
     (   param_dict,
         hb_pd     ) = hb_file_construction_extras(param_dict, proj_dict)

@@ -813,6 +813,11 @@ def makemock_catl(clf_ii, coord_dict_ii, zz_mock, param_dict, proj_dict):
         Updated Dataframe with new positions, coordinates, etc.
 
     """
+    ## Constants
+    Prog_msg = param_dict['Prog_msg']
+    if param_dict['verbose']:
+        print('{0} Creating Mock Catalogue [{1}] ....'.format(Prog_msg, 
+            zz_mock))
     ## Filenames
     mock_catl_pd_file = os.path.join(   proj_dict['mock_cat_mgc'],
                                         '{0}_galcatl_cat_{1}.hdf5'.format(
@@ -954,6 +959,10 @@ def makemock_catl(clf_ii, coord_dict_ii, zz_mock, param_dict, proj_dict):
     ##
     ## Saving file to Pandas DataFrame
     cu.pandas_df_to_hdf5_file(mock_pd, mock_catl_pd_file, key='galcatl')
+    Prog_msg = param_dict['Prog_msg']
+    if param_dict['verbose']:
+        print('{0} Creating Mock Catalogues [{1}]....Done'.format(Prog_msg,
+            zz_mock))
 
     return mock_pd, mock_catl_pd_file
 
@@ -990,6 +999,9 @@ def group_finding(mock_pd, mock_zz_file, param_dict, proj_dict,
         DataFrame with the info on each mock galaxy group
     """
     ## Constants
+    Prog_msg = param_dict['Prog_msg']
+    if param_dict['verbose']:
+        print('{0} Group Finding ....'.format(Prog_msg))
     # Speed of light - in km/s
     speed_c = param_dict['const_dict']['c']
     ##
@@ -1068,6 +1080,9 @@ def group_finding(mock_pd, mock_zz_file, param_dict, proj_dict,
     os.remove(grep_file)
     os.remove(grep_g_file)
     os.remove(mock_coord_path)
+    Prog_msg = param_dict['Prog_msg']
+    if param_dict['verbose']:
+        print('{0} Group Finding ....Done'.format(Prog_msg))
 
     return mockgal_pd_merged, mockgroup_pd
 
@@ -1098,6 +1113,10 @@ def group_mass_assignment(mockgal_pd, mockgroup_pd, param_dict, proj_dict):
     mockgroup_pd_new: pandas DataFrame
         Original info of `mockgroup_pd' + abundance matched mass, M_group
     """
+    ## Constants
+    Prog_msg = param_dict['Prog_msg']
+    if param_dict['verbose']:
+        print('{0} Group Mass Assign. ....'.format(Prog_msg))
     ## Copies of DataFrames
     gal_pd   = mockgal_pd.copy()
     group_pd = mockgroup_pd.copy()
@@ -1199,6 +1218,8 @@ def group_mass_assignment(mockgal_pd, mockgroup_pd, param_dict, proj_dict):
     # Groups
     mockgroup_pd_new = pd.merge(mockgroup_pd, group_pd, how='left',
         left_index=True, right_index=True)
+    if param_dict['verbose']:
+        print('{0} Group Mass Assign. ....Done'.format(Prog_msg))
 
     return mockgal_pd_new, mockgroup_pd_new
 
@@ -1263,6 +1284,10 @@ def halos_rvir_calc(mockgal_pd, param_dict, catl_sim_eq=False):
     mockgal_pd_new: pandas DataFrame
         Original info + Halo rvir
     """
+    ## Constants
+    Prog_msg = param_dict['Prog_msg']
+    if param_dict['verbose']:
+        print('{0} Halo Rvir Calc. ....'.format(Prog_msg))
     ## Copies of DataFrames
     gal_pd      = mockgal_pd.copy()
     ## Cosmological model parameters
@@ -1310,6 +1335,8 @@ def halos_rvir_calc(mockgal_pd, param_dict, catl_sim_eq=False):
                                 how='left'       ,
                                 left_on='haloid' ,
                                 right_on='haloid')
+    if param_dict['verbose']:
+        print('{0} Halo Rvir Calc. ....'.format(Prog_msg))
 
     return mockgal_pd_new
 
@@ -1536,6 +1563,11 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
         dictionary with info of the project that uses the
         `Data Science` Cookiecutter template.
     """
+    ## Constants
+    Prog_msg = param_dict['Prog_msg']
+    if param_dict['verbose']:
+        print('{0} Creating Mock Catalogues ....'.format(Prog_msg))
+
     ## Coordinates dictionary
     coord_dict    = param_dict['coord_dict'].copy()
     ## Coordinate and Dataframe lists
@@ -1666,8 +1698,8 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
         proc.join()
     ##
     ## Reinitializing `param_dict` to None
-    print('{0} Creating Mock Catalogues .... Done'.format(
-        param_dict['Prog_msg']))
+    if param_dict['verbose']:
+        print('{0} Creating Mock Catalogues .... Done'.format(Prog_msg))
     param_dict = None
 
 def multiprocessing_catls(memb_tuples_ii, pos_coords_mocks, param_dict, 
@@ -1733,6 +1765,8 @@ def catl_create_main(zz_mock, pos_coords_mocks_zz, param_dict, proj_dict):
     -----------
 
     """
+    ## Constants
+    Prog_msg = param_dict['Prog_msg']
     ## Deciding which catalogues to read
     ## Reading in input parameters
     # Copy of 'pos_coords_mocks_zz'
@@ -1909,6 +1943,8 @@ def clf_assignment(param_dict, proj_dict, choice_survey=2):
             - `galid`: Galaxy ID
     """
     Prog_msg = param_dict['Prog_msg']
+    if param_dict['verbose']:
+        print('{0} CLF Assignment ....'.format(Prog_msg))
     ## Local halobias file
     hb_local = param_dict['files_dict']['hb_file_local']
     ## CLF Output file - ASCII and FF
@@ -1946,6 +1982,8 @@ def clf_assignment(param_dict, proj_dict, choice_survey=2):
     ##
     ## Remove extra files
     os.remove(hb_clf_out_ff)
+    if param_dict['verbose']:
+        print('{0} CLF Assignment .... Done'.format(Prog_msg))
 
     return clf_pd
 
@@ -1979,6 +2017,9 @@ def cen_sat_distance_calc(clf_pd, param_dict):
     ## TO DO: Fix issue with central and satellite being really close to 
     ##        the box boundary, therefore having different final distances
     ##
+    Prog_msg = param_dict['Prog_msg']
+    if param_dict['verbose']:
+        print('{0} Distance-Central Assignment ....'.format(Prog_msg))
     ## Centrals and Satellites
     cens            = param_dict['cens']
     sats            = param_dict['sats']
@@ -2022,6 +2063,8 @@ def cen_sat_distance_calc(clf_pd, param_dict):
     ##
     ## Assigning it to `clf_pd`
     clf_pd.loc[:, dist_c_label] = clf_pd_mod[dist_c_label].values
+    if param_dict['verbose']:
+        print('{0} Distance-Central Assignment .... Done'.format(Prog_msg))
 
     return clf_pd
 
@@ -2057,6 +2100,9 @@ def mr_survey_matching(clf_pd, param_dict, proj_dict):
             - Survey flag: {1 == ECO, 0 == Resolve B}
     """
     Prog_msg   = param_dict['Prog_msg']
+    if param_dict['verbose']:
+        print('{0} ECO/Resolve Galaxy Prop. Assign. ....'.format(Prog_msg))
+    ## Constants
     failval    = 0.
     ngal_mock  = len(clf_pd)
     ## Survey flags
@@ -2175,6 +2221,8 @@ def mr_survey_matching(clf_pd, param_dict, proj_dict):
     ## Merging DataFrames
     clf_galprop_pd = pd.merge(clf_pd, clf_pd_mod_prop, 
                                 left_index=True, right_index=True)
+    if param_dict['verbose']:
+        print('{0} ECO/Resolve Galaxy Prop. Assign. ....Done'.format(Prog_msg))
 
     return clf_galprop_pd
 

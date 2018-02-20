@@ -22,3 +22,4 @@ dependencies:
     - CosmoloPy
     - requests
     - tqdm
+    - tables

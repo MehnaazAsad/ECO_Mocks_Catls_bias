@@ -223,6 +223,14 @@ def get_parser():
                         type=int,
                         choices=[1,2],
                         default=2)
+    ## Minimum of galaxies in a group
+    parser.add_argument('-nmin',
+                        dest='nmin',
+                        help='Minimum number of galaxies in a galaxy group',
+                        type=int,
+                        choices=range(1,1000),
+                        metavar='[1-1000]',
+                        default=1)
     ## Random Seed
     parser.add_argument('-seed',
                         dest='seed',
@@ -248,6 +256,12 @@ def get_parser():
                         help='Fraction of total number of CPUs to use',
                         type=float,
                         default=0.75)
+    ## Verbose
+    parser.add_argument('-v','--verbose',
+                        dest='verbose',
+                        help='Option to print out project parameters',
+                        type=_str2bool,
+                        default=False)
     ## Parsing Objects
     args = parser.parse_args()
 
@@ -312,6 +326,9 @@ def add_to_dict(param_dict):
     ##
     ## Variable constants
     const_dict = val_consts()
+    # FoF linking lengths
+    l_perp = 0.14
+    l_para = 0.75
     ##
     ## Adding to `param_dict`
     param_dict['cens'         ] = cens
@@ -321,6 +338,8 @@ def add_to_dict(param_dict):
     param_dict['choice_survey'] = choice_survey
     param_dict['plot_dict'    ] = plot_dict
     param_dict['const_dict'   ] = const_dict
+    param_dict['l_perp'       ] = l_perp
+    param_dict['l_para'       ] = l_para
 
     return param_dict
 
@@ -871,15 +890,19 @@ def makemock_catl(clf_ii, coord_dict_ii, zz_mock, param_dict, proj_dict):
     ## Saving new array to DataFrame
     mock_pd.loc['ra_mod'] = ra_new_arr
     ##
+    ## Resetting indices
+    mock_pd.reset_index(inplace=True, drop=True)
+    ##
     ## Assert that coordinates fall within Survey limits
     # assert((mock_pd['ra'].min() >= coord_dict_ii['ra_min_real']))
     ##
     ## Saving file to Pandas DataFrame
     cu.pandas_df_to_hdf5_file(mock_pd, mock_catl_pd_file, key='galcatl')
 
-    return mock_pd
+    return mock_pd, mock_catl_pd_file
 
-def group_finding(mock_pd, param_dict, proj_dict, file_ext='csv'):
+def group_finding(mock_pd, mock_zz_file, param_dict, proj_dict,
+    file_ext='csv'):
     """
     Runs the group finder `FoF` on the file, and assigns galaxies to 
     galaxy groups
@@ -889,6 +912,9 @@ def group_finding(mock_pd, param_dict, proj_dict, file_ext='csv'):
     mock_pd: pandas DataFrame
         DataFrame with positions, velocities, and more for the 
         galaxies that made it into the catalogue
+
+    mock_zz_file: string
+        path to the galaxy catalogue
 
     param_dict: python dictionary
         dictionary with `project` variables
@@ -912,8 +938,82 @@ def group_finding(mock_pd, param_dict, proj_dict, file_ext='csv'):
     speed_c = param_dict['speed_c']
     ##
     ## Running FoF
-    # Defining files for FoF output and Mock coordinates
+    # File prefix
 
+    # Defining files for FoF output and Mock coordinates
+    fof_file        = '{0}.galcatl_fof.{1}'.format(mock_zz_file, file_ext)
+    grep_file       = '{0}.galcatl_grep.{1}'.format(mock_zz_file, file_ext)
+    grep_g_file     = '{0}.galcatl_grep_g.{1}'.format(mock_zz_file, file_ext)
+    mock_coord_path = '{0}.galcatl_radeccz.{1}'.format(mock_zz_file, file_ext)
+    ## RA-DEC-CZ file
+    mock_coord_pd = mock_pd[['ra','dec','cz']].to_csv(mock_coord_path,
+                        sep=' ', header=None, index=False)
+    cu.File_Exists(mock_coord_path)
+    ## Creating `FoF` command and executing it
+    fof_exe = os.path.join( cu.get_code_c(), 'bin', 'fof9_ascii')
+    cu.File_Exists(fof_exe)
+    # FoF command
+    fof_str = '{0} {1} {2} {3} {4} {5} {6} {7} > {8}'
+    fof_arr = [ fof_exe,
+                param_dict['survey_vol'],
+                param_dict['zmin'],
+                param_dict['zmax'],
+                param_dict['l_perp'],
+                param_dict['l_para'],
+                param_dict['nmin'],
+                mock_coord_path,
+                fof_file]
+    fof_cmd = fof_str.format(*fof_arr)
+    # Executing command
+    if param_dict['verbose']:
+        print(fof_cmd)
+    subprocess.call(fof_cmd, shell=True)
+    ##
+    ## Parsing `fof_file` - Galaxy and Group files
+    gal_cmd   = 'grep G -v {0} > {1}'.format(fof_file, grep_file)
+    group_cmd = 'grep G    {0} > {1}'.format(fof_file, grep_g_file)
+    # Running commands
+    if param_dict['verbose']:
+        print(gal_cmd  )
+        print(group_cmd)
+    subprocess.call(gal_cmd  , shell=True)
+    subprocess.call(group_cmd, shell=True)
+    ##
+    ## Extracting galaxy and group information
+    # Column names
+    gal_names   = ['groupid', 'galid', 'ra', 'dec', 'z']
+    group_names = [ 'G', 'groupid', 'cen_ra', 'cen_dec', 'cen_z', 'ngals',\
+                    'sigma_v', 'rproj']
+    # Pandas DataFrames
+    # Galaxies
+    grep_pd = pd.read_csv(grep_file, sep='\s+', header=None, names=gal_names,
+                index_col='galid').sort_index()
+    grep_pd.index.name = None
+    # Converting redshift to velocity
+    grep_pd.loc[:,'cz'] = grep_pd['z'] * speed_c
+    grep_pd = grep_pd.drop('z', axis=1)
+    # Galaxy groups
+    mockgroup_pd = pd.read_csv(grep_g_file, sep='\s+', header=None, 
+                names=group_names)
+    # Group centroid velocity
+    mockgroup_pd.loc[:,'cen_cz'] = mockgroup_pd['cen_z'] * speed_c
+    mockgroup_pd = mockgroup_pd.drop('cen_z', axis=1)
+    mockgroup_pd = mockgroup_pd.drop('G', axis=1)
+    ## Joining the 2 datasets for galaxies
+    mockgal_pd_merged = pd.concat([mock_pd, grep_pd['groupid']], axis=1)
+    # Removing `1` from `groupid`
+    mockgroup_pd.loc     [:,'groupid'] -= 1
+    mockgal_pd_merged.loc[:,'groupid'] -= 1
+    ## Removing FoF files
+    if param_dict['verbose']:
+        print('{0} Removing group-finding related files'.format(
+            param_dict['Prog_msg']))
+    os.remove(fof_file)
+    os.remove(grep_file)
+    os.remove(grep_g_file)
+    os.remove(mock_coord_path)
+
+    return mockgal_pd_merged, mockgroup_pd
 
 
 
@@ -1058,6 +1158,8 @@ def survey_specs(param_dict, cosmo_model):
     ## Saving to `param_dict`
     param_dict['czmin'     ] = czmin
     param_dict['czmax'     ] = czmax
+    param_dict['zmin'      ] = z_arr[0]
+    param_dict['zmax'      ] = z_arr[1]
     param_dict['survey_vol'] = survey_vol
     param_dict['mr_limit'  ] = mr_limit
     param_dict['mr_eco'    ] = mr_eco
@@ -1291,6 +1393,8 @@ def catl_create_main(zz_mock, pos_coords_mocks_zz, param_dict, proj_dict):
     size_cube = float(param_dict['size_cube'])
     ## Cartesian coordinates
     pos_zz = num.asarray([x_ii, y_ii, z_ii])
+    ## Index column
+    clf_ii.loc[:,'idx'] = clf_ii.index.values
     ## Formatting new positions
     ## Placing the observer at `pos_zz` and centering coordinates to center 
     ## of box
@@ -1310,12 +1414,14 @@ def catl_create_main(zz_mock, pos_coords_mocks_zz, param_dict, proj_dict):
     ##
     ## Interpolating values for redshift and comoving distance
     ## and adding redshift-space distortions
-    mock_pd = makemock_catl(clf_ii, coord_dict_ii, zz_mock,
-                            param_dict, proj_dict)
+    (   mock_pd     ,
+        mock_zz_file) = makemock_catl(  clf_ii, coord_dict_ii, zz_mock,
+                                        param_dict, proj_dict)
     ##
     ## Group-finding
     (   mockgal_pd  ,
-        mockgroup_pd) = group_finding(mock_pd, param_dict, proj_dict)
+        mockgroup_pd) = group_finding(  mock_pd, mock_zz_file, 
+                                        param_dict, proj_dict)
 
 
 

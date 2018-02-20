@@ -58,6 +58,7 @@ from astropy.table import Table
 from astropy.io import fits
 import copy
 from multiprocessing import Pool, Process, cpu_count
+from scipy.interpolate import interp1d
 
 
 ## Functions
@@ -213,6 +214,15 @@ def get_parser():
                         type=int,
                         choices=[1,2],
                         default=2)
+    ## Redshift-space distortions
+    parser.add_argument('-zspace',
+                        dest='zspace',
+                        help="""
+                        Option for adding redshift-space distortions (RSD).
+                        Options: (1) = No RSD, (2) With RSD""",
+                        type=int,
+                        choices=[1,2],
+                        default=2)
     ## Random Seed
     parser.add_argument('-seed',
                         dest='seed',
@@ -300,6 +310,9 @@ def add_to_dict(param_dict):
     ## Plotting constants
     plot_dict = plot_const()
     ##
+    ## Variable constants
+    val_consts = val_consts()
+    ##
     ## Adding to `param_dict`
     param_dict['cens'         ] = cens
     param_dict['sats'         ] = sats
@@ -307,6 +320,7 @@ def add_to_dict(param_dict):
     param_dict['hod_dict'     ] = hod_dict
     param_dict['choice_survey'] = choice_survey
     param_dict['plot_dict'    ] = plot_dict
+    param_dict['val_consts'   ] = val_consts
 
     return param_dict
 
@@ -424,6 +438,23 @@ def plot_const():
     plot_dict['title'     ] = size_title
 
     return plot_dict
+
+def val_consts():
+    """
+    Dictionary with variable constants
+
+    Returns
+    --------
+    val_dict: python dictionary
+        python dictionary with values of variables used throughout the script
+    """
+    ## Speed of light - Units km/s
+    c = ac.c.to(u.km/u.s).value
+
+    const_dict = {}
+    const_dict['c'] = c
+
+    return const_dict
 
 ## -----------| Survey-related functions |----------- ##
 
@@ -656,8 +687,9 @@ def z_comoving_calc(param_dict, proj_dict, cosmo_model,
 
     Returns
     ------------
-    z_como_pd: pandas DataFrame
-        DataFrame with `z, d_comoving` in units of Mpc
+    param_dict: python dictionary
+        updated dictionary with `project` variables + `z_como_pd`, which 
+        is the DataFrame with `z, d_comoving` in units of Mpc
     """
     ## File
     z_comoving_file = os.path.join( proj_dict['cosmo_dir'],
@@ -680,8 +712,213 @@ def z_comoving_calc(param_dict, proj_dict, cosmo_model,
         cu.File_Exists(z_comoving_file)
     else:
         z_como_pd = pd.read_csv(z_comoving_file, sep=sep)
+    ## Saving to `param_dict`
+    param_dict['z_como_pd'] = z_como_pd
 
-    return z_como_pd
+    return param_dict
+
+def makemock_catl(clf_ii, coord_dict_ii, zz_mock, param_dict, proj_dict):
+    """
+    Function that calculates distances and redshift-space distortions 
+    for the galaxies that make it into the catalogues
+
+    Parameters
+    -----------
+    clf_ii: pandas DataFrame
+        DataFrame with the information on galaxies, along with position coords,
+        velocities, etc.
+
+    coord_dict_ii: python dictionary
+        dictionary with RA, DEC, and other geometrical variables used 
+        throughout this script.
+
+    zz_mock: int
+        number of the mock catalogue being analyzed
+
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        dictionary with info of the project that uses the
+        `Data Science` Cookiecutter template.
+
+    Returns
+    -----------
+    gal_idx: pandas DataFrame
+        Updated Dataframe with new positions, coordinates, etc.
+
+    """
+    ## Filenames
+    mock_catl_pd_file = os.path.join(   proj_dict['mock_cat_mgc'],
+                                        '{0}_galcatl_cat_{1}.hdf5'.format(
+                                            param_dict['survey'],
+                                            zz_mock))
+    ## Number of galaies
+    clf_ngal    = len(clf_ii)
+    speed_light = param_dict['val_consts']['c']
+    ## Distances from observer to galaxies
+    z_como_pd   = param_dict['z_como_pd']
+    dc_max      = z_como_pd['d_como'].max()
+    dc_z_interp = interp1d(z_como_pd['d_como'], z_como_pd['z'])
+    ## Redshift-space distortions
+    # Cartesina Coordinates
+    cart_gals   = clf_ii[['x' ,'y' ,'z' ]].values
+    vel_gals    = clf_ii[['vx','vy','vz']].values
+    ## Initializing arrays
+    r_dist_arr    = num.zeros(clf_ngal)
+    ra_arr        = num.zeros(clf_ngal)
+    dec_arr       = num.zeros(clf_ngal)
+    cz_arr        = num.zeros(clf_ngal)
+    cz_nodist_arr = num.zeros(clf_ngal)
+    vel_tan_arr   = num.zeros(clf_ngal)
+    vel_tot_arr   = num.zeros(clf_ngal)
+    vel_pec_arr   = num.zeros(clf_ngal)
+    # Looping over all galaxies
+    for kk in tqdm(range(clf_ngal)):
+        cz_local = -1.
+        ## Distance From observer
+        r_dist = (num.sum(cart_gals[kk]**2))**.5
+        assert(r_dist <= dc_max)
+        ## Velocity in km/s
+        cz_local = speed_light * dc_z_interp(r_dist)
+        cz_val   = cz_local
+        ## Right Ascension and declination
+        (   ra_kk,
+            dec_kk) = cu.mock_cart_to_spherical_coords(cart_gals[kk], r_dist)
+        ## Whether or not to add redshift-space distortions
+        if param_dict['zspace'] == 1:
+            vel_tot = 0.
+            vel_tan = 0.
+            vel_pec = 0.
+        elif param_dict['zspace'] == 2:
+            vr       = num.dot(cart_gals[kk], vel_gals[kk])/r_dist
+            cz_val  += vr * (1. + param_dict['zmedian'])
+            vel_tot  = (num.sum(vel_gals[kk]**2))**.5
+            vel_tan  = (vel_tot**2 - vr**2)**.5
+            vel_pec  = (cz_val - cz_local)/(1. + param_dict['zmedian'])
+        ##
+        ## Saving to arrays
+        r_dist_arr   [kk] = r_dist
+        ra_arr       [kk] = ra_kk
+        dec_arr      [kk] = dec_kk
+        cz_arr       [kk] = cz_val
+        cz_nodist_arr[kk] = cz_local
+        vel_tot_arr  [kk] = vel_tot
+        vel_tan_arr  [kk] = vel_tan
+        vel_pec_arr  [kk] = vel_pec
+    ##
+    ## Assigning to DataFrame
+    clf_ii.loc[:,'r_dist'   ] = r_dist_arr
+    clf_ii.loc[:,'ra'       ] = ra_arr
+    clf_ii.loc[:,'dec'      ] = dec_arr
+    clf_ii.loc[:,'cz'       ] = cz_arr
+    clf_ii.loc[:,'cz_nodist'] = cz_nodist_arr
+    clf_ii.loc[:,'vel_tot'  ] = vel_tot_arr
+    clf_ii.loc[:,'vel_tan'  ] = vel_tan_arr
+    clf_ii.loc[:,'vel_pec'  ] = vel_pec_arr
+    ##
+    ## Selecting galaxies with `czmin` and `czmax` criteria
+    #  Right Ascension
+    if coord_dict_ii['ra_min'] < 0.:
+        ra_min_mod = coord_dict_ii['ra_min'] + 360.
+        mock_pd    = clf_ii.loc[(clf_ii['dec'] >= coord_dict_ii['dec_min']) &
+                                (clf_ii['dec'] <= coord_dict_ii['dec_max']) &
+                                (clf_ii['M_r'] != 0.)]
+        mock_pd    = mock_pd.loc[~( (mock_pd['ra'] < ra_min_mod) &
+                                    (mock_pd['ra'] > coord_dict_ii['ra_max']))]
+        # ra_idx1 = clf_ii.loc[(clf_ii['ra'] < (coord_dict_ii['ra_min'] + 360))&
+        #                      (clf_ii['ra'] >  coord_dict_ii['ra_max'])].index
+        # ra_idx1 = ra_idx1.values
+        # idx_arr = num.arange(0, clf_ngal)
+        # ra_idx  = num.delete(idx_arr, ra_idx1).astype(int)
+    elif coord_dict_ii['ra_min'] >= 0.:
+        mock_pd = clf_ii.loc[(clf_ii['ra'] >= coord_dict_ii['ra_min']) &
+                             (clf_ii['ra'] <= coord_dict_ii['ra_max']) &
+                             (clf_ii['dec'] >= coord_dict_ii['dec_min']) &
+                             (clf_ii['dec'] <= coord_dict_ii['dec_max']) &
+                             (clf_ii['M_r'] != 0.)]
+        # ra_idx = clf_ii.loc[(clf_ii['ra'] >= coord_dict_ii['ra_min']) &
+        #                     (clf_ii['ra'] <= coord_dict_ii['ra_max'])].index
+        # ra_idx = ra_idx.values
+    # Declination
+    # dec_idx = clf_ii.loc[   (clf_ii['dec'] >= coord_dict_ii['dec_min']) &
+    #                         (clf_ii['dec'] <= coord_dict_ii['dec_max'])].index.values
+    # mr_idx = clf_ii.loc[clf_ii['M_r'] != 0.].index.values
+    # ra_dec_mr_idx = num.intersect1d(num.intersect1d(ra_idx, dec_idx), mr_idx)
+    ##
+    ## New Catalogue
+    if len(mock_pd) != 0:
+        ## Chaning RA values
+        if coord_dict_ii['ra_min'] < 0.:
+            ra_min_limit = coord_dict_ii['ra_min'] + 360.
+            ra_new_arr   = mock_pd['ra'].values
+            ra_except_idx = num.where(   (ra_new_arr >= ra_min_limit) &
+                                        (ra_new_arr <= 360.))[0]
+            ra_new_arr[ra_except_idx] += (-360.) + coord_dict_ii['ra_diff']
+            ra_normal_idx = num.where(  (ra_new_arr >= 0.) &
+                                        (ra_new_arr <= coord_dict_ii['ra_max']))[0]
+            ra_new_arr[ra_normal_idx] += coord_dict_ii['ra_diff']
+            ra_neg_idx = num.where(ra_new_arr < 0.)[0]
+            if len(ra_neg_idx) != 0.:
+                ra_new_arr[ra_neg_idx] += 360.
+        elif coord_dict_ii['ra_min'] >= 0.:
+            ra_new_arr = mock_pd['ra'].values
+            ra_new_arr += coord_dict_ii['ra_diff']
+            ra_neg_idx = num.where(ra_new_arr < 0.)[0]
+            if len(ra_neg_idx) != 0:
+                ra_new_arr[ra_neg_idx] += 360.
+    ##
+    ## Saving new array to DataFrame
+    mock_pd.loc['ra_mod'] = ra_new_arr
+    ##
+    ## Saving file to Pandas DataFrame
+    cu.pandas_df_to_hdf5_file(mock_pd, mock_catl_pd_file, key='galcatl')
+
+    return mock_pd
+
+def group_finding(mock_pd, param_dict, proj_dict, file_ext='csv'):
+    """
+    Runs the group finder `FoF` on the file, and assigns galaxies to 
+    galaxy groups
+
+    Parameters
+    -----------
+    mock_pd: pandas DataFrame
+        DataFrame with positions, velocities, and more for the 
+        galaxies that made it into the catalogue
+
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        Dictionary with current and new paths to project directories
+
+    file_ext: string, optional (default = 'csv')
+        file extension for the FoF file products
+
+    Returns
+    -----------
+    mockgal_pd_merged: pandas DataFrame
+        DataFrame with the info on each mock galaxy + their group properties
+
+    mockgroup_pd: pandas DataFrame
+        DataFrame with the info on each mock galaxy group
+    """
+    ## Constants
+    # Speed of light - in km/s
+    speed_c = param_dict['speed_c']
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## -----------| Survey-related functions |----------- ##
 
@@ -865,7 +1102,7 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
     ## Determining positions
     for kk in range(z_mocks_n_ul):
         pos_coords_mocks.append([   x_init_ul, y_init_ul, z_init_ul,
-                                    clf_ul_pd, coord_dict_ul])#, clf_ul_pd])
+                                    clf_ul_pd.copy(), coord_dict_ul])
         z_init_ul += z_delta_ul
     ##############################################
     ###### ----- X-Y Upper Right Mocks -----######
@@ -882,7 +1119,7 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
     ## Determining positions
     for kk in range(z_mocks_n_ur):
         pos_coords_mocks.append([   x_init_ur, y_init_ur, z_init_ur,
-                                    clf_ur_pd, coord_dict_ur])
+                                    clf_ur_pd.copy(), coord_dict_ur])
         z_init_ur += z_delta_ul
     ##############################################
     ###### ----- X-Y Lower Left Mocks  -----######
@@ -906,7 +1143,7 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
     ## Saving new positions
     for kk in range(z_mocks_n_ll):
         pos_coords_mocks.append([   x_init_ll, y_init_ll, z_init_ll,
-                                    clf_ll_pd, coord_dict_ll])#, clf_ll_pd])
+                                    clf_ll_pd.copy(), coord_dict_ll])
         z_init_ll += z_delta_ul
     ##############################################
     ###### ----- X-Y Lower Right Mocks -----######
@@ -928,7 +1165,7 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
     ## Saving new positions
     for kk in range(z_mocks_n_lr):
         pos_coords_mocks.append([   x_init_lr, y_init_lr, z_init_lr,
-                                    clf_lr_pd, coord_dict_lr])
+                                    clf_lr_pd.copy(), coord_dict_lr])
         z_init_lr += z_delta_ul
     ##############################################
     ## Creating mock catalogues
@@ -957,7 +1194,8 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
     for ii in range(len(memb_tuples)):
         ## Defining `proc` element
         proc = Process(target=multiprocessing_catls,
-                        args=(pos_coords_mocks[ii], param_dict, proj_dict))
+                        args=(  memb_tuples[ii], pos_coords_mocks, param_dict, 
+                                proj_dict, ii))
         # Appending to main `procs` list
         procs.append(proc)
         proc.start()
@@ -969,14 +1207,55 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
     ## Reinitializing `param_dict` to None
     param_dict = None
 
-def multiprocessing_catls(pos_coords_mocks_ii, param_dict, proj_dict):
+def multiprocessing_catls(memb_tuples_ii, pos_coords_mocks, param_dict, 
+    proj_dict, ii_mock):
     """
     Distributes the analyis of the creation of mock catalogues into 
     more than 1 processor
 
     Parameters
     -----------
+    memb_tuples_ii: tuple
+        tuple of catalogue indices to be analyzed
+
     pos_coords_mocks_ii: tuple, shape (4,)
+        tuple with the positons coordinates, coordinate dictionary, 
+        and DataFrame to be used
+
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        dictionary with info of the project that uses the
+        `Data Science` Cookiecutter template.
+
+    ii_mock: int
+        number of the mock catalogue being analyzed
+
+    Returns
+    -----------
+    """
+    ## Program Message
+    Prog_msg = param_dict['Prog_msg']
+    ## Reading which catalogues to process
+    start_ii, end_ii = memb_tuples_ii
+    ##
+    ## Looping over the desired catalogues
+    for zz in range(start_ii, end_ii):
+        ## Making z'th catalogue
+        catl_create_main(zz, pos_coords_mocks[zz], param_dict, proj_dict)
+
+def catl_create_main(zz_mock, pos_coords_mocks_zz, param_dict, proj_dict):
+    """
+    Distributes the analyis of the creation of mock catalogues into 
+    more than 1 processor
+
+    Parameters
+    -----------
+    zz_mock: int
+        number of the mock catalogue being analyzed
+
+    pos_coords_mocks: tuples, shape (4,)
         tuple with the positons coordinates, coordinate dictionary, 
         and DataFrame to be used
 
@@ -989,8 +1268,51 @@ def multiprocessing_catls(pos_coords_mocks_ii, param_dict, proj_dict):
 
     Returns
     -----------
+
     """
+    ## Deciding which catalogues to read
     ## Reading in input parameters
+    # Copy of 'pos_coords_mocks_zz'
+    pos_coords_mocks_zz_copy = copy.deepcopy(pos_coords_mocks_zz)
+    # Paramters
+    (   x_ii         ,
+        y_ii         ,
+        z_ii         ,
+        clf_ii       ,
+        coord_dict_ii) = pos_coords_mocks_zz_copy
+    ## Size of cube
+    size_cube = float(param_dict['size_cube'])
+    ## Cartesian coordinates
+    pos_zz = num.asarray([x_ii, y_ii, z_ii])
+    ## Formatting new positions
+    ## Placing the observer at `pos_zz` and centering coordinates to center 
+    ## of box
+    for kk, coord_kk in enumerate(['x','y','z']):
+        ## Original columns
+        clf_ii.loc[:,coord_kk+'_orig'] = clf_ii[coord_kk].values
+        ## Moving observer
+        clf_ii.loc[:,coord_kk] = clf_ii[coord_kk] - pos_zz[kk]
+        ## Periodic boundaries
+        clf_ii_neg = clf_ii.loc[clf_ii[coord_kk] <= -(size_cube/2.)].index
+        clf_ii_pos = clf_ii.loc[clf_ii[coord_kk] >=  (size_cube/2.)].index
+        ## Fixing negative values
+        if len(clf_ii_neg) != 0:
+            clf_ii.loc[clf_ii_neg, coord_kk] += size_cube
+        if len(clf_ii_pos) != 0:
+            clf_ii.loc[clf_ii_pos, coord_kk] -= size_cube
+    ##
+    ## Interpolating values for redshift and comoving distance
+    ## and adding redshift-space distortions
+    mock_pd = makemock_catl(clf_ii, coord_dict_ii, zz_mock,
+                            param_dict, proj_dict)
+    ##
+    ## Group-finding
+    (   mockgal_pd  ,
+        mockgroup_pd) = group_finding(mock_pd, param_dict, proj_dict)
+
+
+
+
 
 ## -----------| Halobias-related functions |----------- ##
 

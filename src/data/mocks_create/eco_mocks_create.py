@@ -311,7 +311,7 @@ def add_to_dict(param_dict):
     plot_dict = plot_const()
     ##
     ## Variable constants
-    val_consts = val_consts()
+    const_dict = val_consts()
     ##
     ## Adding to `param_dict`
     param_dict['cens'         ] = cens
@@ -320,7 +320,7 @@ def add_to_dict(param_dict):
     param_dict['hod_dict'     ] = hod_dict
     param_dict['choice_survey'] = choice_survey
     param_dict['plot_dict'    ] = plot_dict
-    param_dict['val_consts'   ] = val_consts
+    param_dict['const_dict'   ] = const_dict
 
     return param_dict
 
@@ -755,7 +755,7 @@ def makemock_catl(clf_ii, coord_dict_ii, zz_mock, param_dict, proj_dict):
                                             zz_mock))
     ## Number of galaies
     clf_ngal    = len(clf_ii)
-    speed_light = param_dict['val_consts']['c']
+    speed_light = param_dict['const_dict']['c']
     ## Distances from observer to galaxies
     z_como_pd   = param_dict['z_como_pd']
     dc_max      = z_como_pd['d_como'].max()

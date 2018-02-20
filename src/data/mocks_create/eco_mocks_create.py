@@ -2176,7 +2176,7 @@ def main(args):
     param_dict = download_files(param_dict, proj_dict)
     ##
     ## Redshift and Comoving distance
-    z_como_pd = z_comoving_calc(param_dict, proj_dict)
+    param_dict = z_comoving_calc(param_dict, proj_dict)
     ## Halobias Extras file - Modified Halobias file
     (   param_dict,
         hb_pd     ) = hb_file_construction_extras(param_dict, proj_dict)

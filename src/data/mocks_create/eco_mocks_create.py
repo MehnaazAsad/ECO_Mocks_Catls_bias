@@ -167,6 +167,13 @@ def get_parser():
                         help='Length of simulation cube in Mpc/h',
                         type=float,
                         default=180.)
+    ## Type of Abundance matching
+    parser.add_argument('-abopt',
+                        dest='catl_type',
+                        help='Type of Abund. Matching used in catalogue',
+                        type=str,
+                        choices=['mr', 'mstar'],
+                        default='mr')
     # Median Redshift
     parser.add_argument('-zmed',
                         dest='zmedian',
@@ -477,6 +484,25 @@ def val_consts():
 
 ## -----------| Survey-related functions |----------- ##
 
+def Mr_group_calc(gal_mr_arr):
+    """
+    Calculated total r-band absolute magnitude of the group
+
+    Parameters
+    ----------
+    gal_mr_arr: array_like
+        array of r-band absolute magnitudes of member galaxies of the group
+
+    Returns
+    -------
+    group_mr: float
+        total r-band absolute magnitude of the group
+    """
+    group_lum = num.sum(10.**cu.absolute_magnitude_to_luminosity(gal_mr_arr, 'r'))
+    group_mr  = cu.luminosity_to_absolute_mag(group_lum, 'r')
+
+    return group_mr
+
 def cosmo_create(param_dict, H0=100., Om0=0.25, Ob0=0.04, Tcmb0=2.7255):
     """
     Creates instance of the cosmology used throughout the project.
@@ -574,9 +600,11 @@ def hmf_calc(cosmo_model, proj_dict, param_dict, Mmin=10, Mmax=16,
 
     Returns
     ----------
-    hmf_pd: pandas DataFrame
-        DataFrame of `log10 masses` and `cumulative number densities` for 
-        halos of mass > M.
+    param_dict: python dictionary
+        dictionary with udpdated variables:
+            - 'hmf_pd': pandas DataFrame
+                    DataFrame of `log10 masses` and `cumulative number 
+                    densities` for halos of mass > M.
     """
     ## HMF Output file
     hmf_outfile = os.path.join( proj_dict['mf_dir'],
@@ -607,8 +635,10 @@ def hmf_calc(cosmo_model, proj_dict, param_dict, Mmin=10, Mmax=16,
     # Saving to output file
     hmf_pd.to_csv(hmf_outfile, sep=sep, index=False,
         columns=['logM','ngtm'])
+    # Saving to `param_dict`
+    param_dict['hmf_pd'] = hmf_pd
 
-    return hmf_pd
+    return param_dict
 
 def download_files(param_dict, proj_dict):
     """
@@ -1066,9 +1096,247 @@ def group_mass_assignment(mockgal_pd, mockgroup_pd, param_dict, proj_dict):
     Sats     = int(0)
     n_gals   = len(gal_pd  )
     n_groups = len(group_pd)
+    ## Type of abundance matching
+    if param_dict['catl_type'] == 'mr':
+        prop_gal    = 'M_r'
+        reverse_opt = True
+    elif param_dict['catl_type'] == 'mstar':
+        prop_gal    = 'logmstar'
+        reverse_opt = False
+    # Absolute value of `prop_gal`
+    prop_gal_abs = prop_gal + '_abs'
+    ##
+    ## Selecting only a `few` columns
+    # Galaxies
+    gal_pd = gal_pd.loc[:,[prop_gal, 'groupid']]
+    # Groups
+    group_pd = group_pd[['ngals']]
+    ##
+    ## Total `prop_gal` for groups
+    group_prop_arr = [[] for x in range(n_groups)]
+    ## Looping over galaxy groups
+    # Mstar-based
+    if param_dict['catl_type'] == 'mstar':
+        for group_zz in range(n_groups):
+            ## Stellar mass
+            group_prop = gal_pd.loc[gal_pd['groupid']==group, prop_gal]
+            group_log_prop_tot = num.log10(num.sum(10**group_prop))
+            ## Saving to array
+            group_prop_arr[group_zz] = group_log_prop_tot
+    # Luminosity-based
+    elif param_dict['catl_type'] == 'mr':
+        for group_zz in range(n_groups):
+            ## Total abs. magnitude of the group
+            group_prop = gal_pd.loc[gal_pd['groupid']==group_zz, prop_gal]
+            group_prop_tot = Mr_group(group_prop)
+            ## Saving to array
+            group_prop_arr[group_zz] = group_prop_tot
+    ##
+    ## Saving to DataFrame
+    group_prop_arr            = num.asarray(group_prop_arr)
+    group_pd.loc[:, prop_gal] = group_prop_arr
+    if param_dict['verbose']:
+        print('{0} Calculating group masses...Done'.format(
+            param_dict['Prog_msg']))
+    ##
+    ## --- Halo Abundance Matching --- ##
     ## Mass function for given cosmology
-    hmf_pd = hmf_calc(cosmo_model, proj_dict, param_dict, Mmin=6., Mmax=16.01,
-        dlog10m=1.e-3, hmf_model=param_dict['hmf_model'])
+    hmf_pd = param_dict['hmf_pd']
+    ## Halo mass
+    Mh_ab = cu.abundance_matching_f(group_prop_arr,
+                                    hmf_pd,
+                                    volume1=param_dict['survey_vol'],
+                                    reverse=reverse_opt,
+                                    var_name='logM',
+                                    dens_name='ngtm')
+    # Assigning to DataFrame
+    group_pd.loc[:, 'M_group'] = Mh_ab
+    ###
+    ### ---- Galaxies ---- ###
+    # Adding `M_group` to galaxy catalogue
+    gal_pd = pd.merge(gal_pd, group_pd[['M_group', 'ngals']],
+                        how='left', left_on='groupid', right_index=True)
+    # Remaining `ngals` column
+    gal_pd = gal_pd.rename(columns={'ngals':'g_ngal'})
+    #
+    # Selecting `central` and `satellite` galaxies
+    gal_pd.loc[:, prop_gal_abs] = num.abs(gal_pd[prop_gal])
+    gal_pd.loc[:, 'g_galtype']  = num.ones(n_gals).astype(int)*Sats
+    g_galtype_groups            = num.ones(n_groups)*Sats
+    ##
+    ## Looping over galaxy groups
+    for zz in range(n_groups):
+        gals_g = gal_pd.loc[gal_pd['groupid']==zz]
+        ## Determining group galaxy type
+        gals_g_max = gals_g.loc[gals_g[prop_gal_abs]==gals_g[prop_gal_abs].max()]
+        g_galtype_groups[zz] = int(num.random.choice(gals_g_max.index.values))
+    g_galtype_groups = num.asarray(g_galtype_groups).astype(int)
+    ## Assigning group galaxy type
+    gal_pd.loc[g_galtype_groups, 'g_galtype'] = Cens
+    ##
+    ## Dropping columns
+    # Galaxies
+    gal_col_arr = [prop_gal, prop_gal_abs, 'groupid']
+    gal_pd      = gal_pd.drop(gal_col_arr, axis=1)
+    # Groups
+    group_col_arr = ['ngals']
+    group_pd      = group_pd.drop(group_col_arr, axis=1)
+    ##
+    ## Merging to original DataFrames
+    # Galaxies
+    mockgal_pd_new = pd.merge(mockgal_pd, gal_pd, how='left', left_index=True,
+        right_index=True)
+    # Groups
+    mockgroup_pd_new = pd.merge(mockgroup_pd, group_pd, how='left',
+        left_index=True, right_index=True)
+
+    return mockgal_pd_new, mockgroup_pd_new
+
+## --------- Halo Rvir calculation ------------##
+
+def halos_rvir_calc(mockgal_pd, param_dict, catl_sim_eq=False):
+    """
+    Calculates the virial radius of dark matter halos for each Halo in the 
+    catalogue
+    Taken from:
+        http://home.strw.leidenuniv.nl/~franx/college/galaxies10/handout4.pdf
+
+    Parameters:
+    ------------
+    mockgal_pd: pandas DataFrame
+        DataFrame containing information for each mock galaxy.
+        Includes galaxy properties + group ID + Ab. Match. Mass
+
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    catl_sim_eq: boolean, optional (default = False)
+        option to replace the `rvir` of all halos with zeros 
+        when the number of galaxies from a distinct halo DO NOT MATCH the 
+        total number of galaxies from a distinct halo,
+        i.e. n_catl(halo) == n_sim(halo)
+
+    Returns
+    ------------
+    mockgal_pd_new: pandas DataFrame
+        Original info + Halo rvir
+    """
+    ## Copies of DataFrames
+    gal_pd      = mockgal_pd.copy()
+    ## Cosmological model parameters
+    cosmo_model = param_dict['cosmo_model']
+    H0          = cosmo_model.H0.to(u.km/(u.s * u.Mpc))
+    Om0         = cosmo_model.Om0
+    Ode0        = cosmo_model.Ode0
+    ## Other constants
+    G           = ac.G
+    speed_c     = ac.c.to(u.km/u.s)
+    ##
+    ## Halo IDs
+    haloid_counts = Counter(gal_pd['haloid'])
+    haloid_arr    = num.unique(gal_pd['haloid'])
+    ## Mean cz's
+    haloid_z = num.array([gal_pd.loc[gal_pd['haloid']==xx,'cz'].mean() for \
+                        xx in haloid_arr])/speed_c.value
+    ## Halo masses
+    haloid_mass = num.array([gal_pd.loc[gal_pd['haloid']==xx,'M_h'].mean() for \
+                        xx in haloid_arr])
+    ## Halo rvir - in Mpc/h
+    rvir_num = (10**(haloid_mass)*u.Msun) * G
+    rvir_den = 100 * H0**2 * (Om0 * (1.+haloid_z)**3 + Ode0)
+    rvir_q   = ((rvir_num / rvir_den)**(1./3)).to(u.Mpc)
+    rvir     = rvir_q.value
+    ## Replacing with zero if necessary
+    if catl_sim_eq:
+        ## Replacing value
+        repl_val = 0.
+        ## Halo ngals - in catalogue
+        haloid_ngal_cat = num.array([haloid_counts[xx] for xx in haloid_arr])
+        ## Halo ngals - in simulation
+        haloid_ngal_sim = num.array([gal_pd.loc[gal_pd['haloid']==xx, 'halo_ngal'].values[0]\
+                            for xx in haloid_arr])
+        ## Chaning `rvir` values to zeros if halo is not complete
+        rvir_bool = [1 if haloid_ngal_cat[xx]==haloid_ngal_sim[xx] else 0 \
+                        for xx in range(len(haloid_arr))]
+        rvir[rvir_bool] = repl_val
+    ## Saving to DataFrame
+    rvir_pd = pd.DataFrame({'haloid':haloid_arr, 'halo_rvir':rvir})
+    ## Merging DataFrames
+    # Galaxies
+    mockgal_pd_new = pd.merge(  left=gal_pd      ,
+                                right=rvir_pd    ,
+                                how='left'       ,
+                                left_on='haloid' ,
+                                right_on='haloid')
+
+    return mockgal_pd_new
+
+## --------- Writing to files ------------##
+
+def writing_to_output_file(mockgal_pd, mockgroup_pd, zz_mock, 
+    param_dict, proj_dict, output_fmt = 'hdf5', perf_catl=False):
+    """
+    Writes the galaxy and group information to ascii files + astropy LaTeX
+    tables
+
+    Parameters
+    -----------
+    mockgal_pd: pandas DataFrame
+        DataFrame containing information for each mock galaxy.
+        Includes galaxy properties + group ID + Ab. Match. Mass
+
+    mockgroup_pd: pandas DataFrame
+        DataFame containing information for each galaxy group
+
+    zz_mock: float
+        number of group/galaxy catalogue being analyzed
+
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        Dictionary with current and new paths to project directories
+
+    perf_catl: boolean, optional (default = False)
+        if 'true', it saves the `perfect` version of the galaxy / group 
+        catalogue.
+
+    """
+    ## Keys
+    gal_key   = '/gal_catl'
+    group_key = '/group_catl'
+    ## Filenames
+    if perf_catl:
+        ## Perfect Galaxy catalogue
+        gal_file = os.path.join(proj_dict['mock_cat_mc_perf'],
+                                '{0}_cat_{1}_memb_cat_perf.{2}'.format(
+                                    param_dict['survey'], zz_mock, output_fmt))
+        ## Perfect Group catalogue
+        group_file = os.path.join(proj_dict['mock_cat_gc_perf'],
+                                '{0}_cat_{1}_group_cat_perf.{2}'.format(
+                                    param_dict['survey'], zz_mock, output_fmt))
+    else:
+        ## Normal galaxy catalogue
+        gal_file = os.path.join(proj_dict['mock_cat_mc'],
+                                '{0}_cat_{1}_memb_cat.{2}'.format(
+                                    param_dict['survey'], zz_mock, output_fmt))
+        ## Normal group catalogue
+        group_file = os.path.join(proj_dict['mock_cat_gc'],
+                                '{0}_cat_{1}_group_cat.{2}'.format(
+                                    param_dict['survey'], zz_mock, output_fmt))
+    ##
+    ## Saving DataFrames to files
+    # Member catalogue
+    cu.pandas_df_to_hdf5_file(mockgal_pd, gal_file, key=gal_key)
+    # Group catalogue
+    cu.pandas_df_to_hdf5_file(mockgroup_pd, group_file, key=group_key)
+    ##
+    ## Checking for file's existence
+    cu.File_Exists(gal_file)
+    cu.File_Exists(group_file)
+    print('{0} gal_file  : {1}'.format(param_dict['Prog_msg'], gal_file))
+    print('{0} group_file: {1}'.format(param_dict['Prog_msg'], group_file))
+
 
 
 
@@ -1479,6 +1747,13 @@ def catl_create_main(zz_mock, pos_coords_mocks_zz, param_dict, proj_dict):
     (   mockgal_pd  ,
         mockgroup_pd) = group_mass_assignment(mockgal_pd, mockgroup_pd, 
                             param_dict, proj_dict)
+    ##
+    ## Halo Rvir
+    mockgal_pd = halos_rvir_calc(mockgal_pd, param_dict)
+    ##
+    ## Writing output files - `Normal Catalogues`
+    writing_to_output_file(mockgal_pd, mockgroup_pd, zz_mock,
+        param_dict, proj_dict, perf_catl=False)
 
 
 
@@ -1908,6 +2183,9 @@ def main(args):
     param_dict = cosmo_create(param_dict)
     ## Survey Details
     param_dict = survey_specs(param_dict)
+    ## Halo mass function
+    hmf_pd = hmf_calc(param_dict['cosmo_model'], proj_dict, param_dict,
+        Mmin=6., Mmax=16.01, dlog10m=1.e-3, hmf_model=param_dict['hmf_model'])
     ##
     ## Downloading files
     param_dict = download_files(param_dict, proj_dict)

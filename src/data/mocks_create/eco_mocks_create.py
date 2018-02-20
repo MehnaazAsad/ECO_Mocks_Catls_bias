@@ -1684,7 +1684,7 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
     ## Assigning `memb_tuples` to function `multiprocessing_catls`
     print('{0} Creating Mock Catalogues ....'.format(param_dict['Prog_msg']))
     procs = []
-    for ii in range(len(memb_tuples[0])):
+    for ii in range(len(memb_tuples)):
         ## Defining `proc` element
         proc = Process(target=multiprocessing_catls,
                         args=(  memb_tuples[ii], pos_coords_mocks, param_dict, 

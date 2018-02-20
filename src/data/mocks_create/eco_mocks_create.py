@@ -405,6 +405,10 @@ def directory_skeleton(param_dict, proj_dict):
     ## Photometry files
     phot_dir    = os.path.join( raw_dir,
                                 'surveys_phot_files')
+    ## Figures
+    fig_dir     = os.path.join( proj_dict['plot_dir'],
+                                param_dict['halotype'],
+                                param_dict['survey'])
     ## Creating output folders for the catalogues
     mock_cat_mgc     = os.path.join(catl_outdir, 'galaxy_catalogues')
     mock_cat_mc      = os.path.join(catl_outdir, 'member_galaxy_catalogues')
@@ -427,6 +431,7 @@ def directory_skeleton(param_dict, proj_dict):
     cu.Path_Folder(raw_dir)
     cu.Path_Folder(hb_files_dir)
     cu.Path_Folder(phot_dir)
+    cu.Path_Folder(fig_dir)
     ##
     ## Adding to `proj_dict`
     proj_dict['cosmo_dir'       ] = cosmo_dir
@@ -443,6 +448,7 @@ def directory_skeleton(param_dict, proj_dict):
     proj_dict['raw_dir'         ] = raw_dir
     proj_dict['hb_files_dir'    ] = hb_files_dir
     proj_dict['phot_dir'        ] = phot_dir
+    proj_dict['fig_dir'         ] = fig_dir
 
     return proj_dict
 
@@ -458,10 +464,13 @@ def plot_const():
     # Size labels
     size_label = 20
     size_title = 25
+    # Markers
+    markersize = 3.
     # Dictionary
     plot_dict = {}
     plot_dict['size_label'] = size_label
     plot_dict['title'     ] = size_title
+    plot_dict['markersize'] = markersize
 
     return plot_dict
 
@@ -2228,7 +2237,8 @@ def mr_survey_matching(clf_pd, param_dict, proj_dict):
 
 ## -----------| Plotting-related functions |----------- ##
 
-def mockcatls_simbox_plot(param_dict, proj_dict, catl_ext='.hdf5'):
+def mockcatls_simbox_plot(param_dict, proj_dict, catl_ext='.hdf5',
+    fig_fmt='pdf', figsize=(9,9)):
     """
     Plots the distribution of the mock catalogues in the simulation box
 
@@ -2241,10 +2251,75 @@ def mockcatls_simbox_plot(param_dict, proj_dict, catl_ext='.hdf5'):
         dictionary with info of the project that uses the
         `Data Science` Cookiecutter template.
     """
+    ## Constants and variables
+    Prog_msg   = param_dict['Prog_msg' ]
+    plot_dict  = param_dict['plot_dict']
+    markersize = plot_dict['markersize']
     ## List of catalogues
-    catl_path_arr = cu.Index(   proj_dict['mock_cat_mc'], catl_ext)
+    catl_path_arr = cu.Index(proj_dict['mock_cat_mc'], catl_ext)
     n_catls       = len(catl_path_arr)
-    ## 
+    ## Filename
+    fname = os.path.join(   proj_dict['fig_dir'],
+                            '{0}_{1}_xyz_mocks.{2}'.format(
+                                param_dict['survey'],
+                                param_dict['halotype'],
+                                fig_fmt))
+    ## Setting up figure
+    x_label = r'\boldmath X [Mpc $\mathrm{h^{-1}}$]'
+    y_label = r'\boldmath Y [Mpc $\mathrm{h^{-1}}$]'
+    z_label = r'\boldmath Z [Mpc $\mathrm{h^{-1}}$]'
+    xlim    = (0, param_dict['size_cube'])
+    ylim    = (0, param_dict['size_cube'])
+    # Figure title
+    if param_dict['survey'] == 'ECO':
+        fig_title = 'ECO Survey'
+    else:
+        fig_title = 'RESOLVE {0}'.format(param_dict['survey'])
+    # Figure and axes
+    plt.close()
+    plt.clf()
+    fig = plt.figure(figsize=figsize)
+    ax1 = fig.add_subplot(221, facecolor='white', aspect='equal')
+    ax2 = fig.add_subplot(222, facecolor='white', aspect='equal')
+    ax3 = fig.add_subplot(223, facecolor='white', aspect='equal')
+    # Limits
+    ax1.set_xlim(xlim)
+    ax1.set_ylim(ylim)
+    ax2.set_xlim(xlim)
+    ax2.set_ylim(ylim)
+    ax3.set_xlim(xlim)
+    ax3.set_ylim(ylim)
+    # Labels
+    ax1.set_xlabel(x_label, fontsize=plot_dict['size_label'])
+    ax1.set_ylabel(y_label, fontsize=plot_dict['size_label'])
+    ax2.set_xlabel(x_label, fontsize=plot_dict['size_label'])
+    ax2.set_ylabel(z_label, fontsize=plot_dict['size_label'])
+    ax3.set_xlabel(y_label, fontsize=plot_dict['size_label'])
+    ax3.set_ylabel(z_label, fontsize=plot_dict['size_label'])
+    # Grid
+    ax1.grid(True, color='gray', which='major', linestyle='--')
+    ax2.grid(True, color='gray', which='major', linestyle='--')
+    ax3.grid(True, color='gray', which='major', linestyle='--')
+    # Colormap
+    cm      = plt.get_cmap('gist_rainbow')
+    col_arr = [cm(ii/float(n_catls)) for ii in range(n_catls)]
+    # Title
+    title_obj = fig.suptitle(fig_title, fontsize=plot_dict['title'])
+    title_obj.set_y(1.04)
+    # Adjusting space
+    plt.subplots_adjust(top=0.86)
+    plt.tight_layout()
+    # Saving figure
+    if fig_fmt=='pdf':
+        plt.savefig(fname, bbox_inches='tight')
+    else:
+        plt.savefig(fname, bbox_inches='tight', dpi=400)
+    print('{0} Figure saved as: {1}'.format(Prog_msg, fname))
+    plt.clf()
+    plt.close()
+
+
+
 
 
 

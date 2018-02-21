@@ -69,7 +69,7 @@ endif
 
 ## Create catalogues for `ECO`
 catl_mr_make:
-	@python $(SRC_DIR)/mocks_create_main.py -abopt mr -cpu_frac $(CPU_FRAC) -remove $(REMOVE_FILES)
+	@python $(SRC_DIR)/mocks_create_main.py -abopt mr -cpu $(CPU_FRAC) -remove $(REMOVE_FILES)
 
 ## Delete existing `mock` catalogues
 delete_mock_catls:

@@ -1796,8 +1796,6 @@ def catl_create_main(zz_mock, pos_coords_mocks_zz, param_dict, proj_dict):
     ## Placing the observer at `pos_zz` and centering coordinates to center 
     ## of box
     for kk, coord_kk in enumerate(['x','y','z']):
-        ## Original columns
-        clf_ii.loc[:,coord_kk+'_orig'] = clf_ii[coord_kk].values
         ## Moving observer
         clf_ii.loc[:,coord_kk] = clf_ii[coord_kk] - pos_zz[kk]
         ## Periodic boundaries
@@ -1986,6 +1984,9 @@ def clf_assignment(param_dict, proj_dict, choice_survey=2):
                 'loghalom','cs_flag','haloid','halo_ngal','M_r','galid']
     clf_pd   = pd.read_csv(hb_clf_out, sep='\s+', header=None, names=clf_cols)
     clf_pd.loc[:,'galid'] = clf_pd['galid'].astype(int)
+    ## Copy of galaxy positions
+    for coord_zz in ['x','y','z']:
+        clf_pd.loc[:, coord_zz+'_orig'] = clf_pd[coord_zz].values
     ##
     ## Remove extra files
     os.remove(hb_clf_out_ff)

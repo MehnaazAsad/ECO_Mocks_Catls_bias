@@ -171,12 +171,6 @@ def get_parser():
                         type=str,
                         choices=['mvir','m200'],
                         default='mvir')
-    # Halobias file
-    parser.add_argument('-hbfile',
-                        dest='hbfile',
-                        help='Path to the Halobias file in `.ff` format',
-                        type=lambda x: is_valid_file(parser, x))#,
-                        # required=True)
     # Cosmology used for the project
     parser.add_argument('-cosmo',
                         dest='cosmo_choice',
@@ -371,20 +365,24 @@ def directory_skeleton(param_dict, proj_dict):
     # Mass Function
     mf_dir       = os.path.join(int_dir,
                                 'MF',
+                                param_dict['cosmo_choice'],
                                 param_dict['survey'])
     # Conditional Luminosity Function (CLF)
     clf_dir      = os.path.join(int_dir,
                                 'CLF_HB',
+                                param_dict['cosmo_choice'],
                                 param_dict['halotype'],
                                 param_dict['survey'] + '/')
     # Halo Ngal
     h_ngal_dir   = os.path.join(int_dir,
                                 'HALO_NGAL_CLF',
+                                param_dict['cosmo_choice'],
                                 param_dict['halotype'],
                                 param_dict['survey'] + '/')
     ## Catalogues
     catl_outdir = os.path.join( proj_dict['data_dir'],
                                 'processed',
+                                param_dict['cosmo_choice'],
                                 param_dict['halotype'],
                                 param_dict['survey'])
     ## Photometry files
@@ -392,12 +390,14 @@ def directory_skeleton(param_dict, proj_dict):
                                 'surveys_phot_files')
     ## Figures
     fig_dir     = os.path.join( proj_dict['plot_dir'],
+                                param_dict['cosmo_choice'],
                                 param_dict['halotype'],
                                 param_dict['survey'])
     ## TAR folder
     tar_dir     = os.path.join( proj_dict['data_dir'],
                                 'processed',
                                 'TAR_files',
+                                param_dict['cosmo_choice'],
                                 param_dict['halotype'],
                                 param_dict['survey'])
     ## Creating output folders for the catalogues
@@ -2277,21 +2277,25 @@ def writing_to_output_file(mockgal_pd, mockgroup_pd, zz_mock,
     if perf_catl:
         ## Perfect Galaxy catalogue
         gal_file = os.path.join(proj_dict['mock_cat_mc_perf'],
-                                '{0}_cat_{1}_memb_cat_perf.{2}'.format(
-                                    param_dict['survey'], zz_mock, output_fmt))
+                                '{0}_cat_{1}_{2}_memb_cat_perf.{3}'.format(
+                                    param_dict['survey'], zz_mock, 
+                                    param_dict['cosmo_choice'], output_fmt))
         ## Perfect Group catalogue
         group_file = os.path.join(proj_dict['mock_cat_gc_perf'],
-                                '{0}_cat_{1}_group_cat_perf.{2}'.format(
-                                    param_dict['survey'], zz_mock, output_fmt))
+                                '{0}_cat_{1}_{2}_group_cat_perf.{3}'.format(
+                                    param_dict['survey'], zz_mock,
+                                    param_dict['cosmo_choice'], output_fmt))
     else:
         ## Normal galaxy catalogue
         gal_file = os.path.join(proj_dict['mock_cat_mc'],
-                                '{0}_cat_{1}_memb_cat.{2}'.format(
-                                    param_dict['survey'], zz_mock, output_fmt))
+                                '{0}_cat_{1}_{2}_memb_cat.{3}'.format(
+                                    param_dict['survey'], zz_mock,
+                                    param_dict['cosmo_choice'], output_fmt))
         ## Normal group catalogue
         group_file = os.path.join(proj_dict['mock_cat_gc'],
-                                '{0}_cat_{1}_group_cat.{2}'.format(
-                                    param_dict['survey'], zz_mock, output_fmt))
+                                '{0}_cat_{1}_{2}_group_cat.{3}'.format(
+                                    param_dict['survey'], zz_mock,
+                                    param_dict['cosmo_choice'], output_fmt))
     ##
     ## Saving DataFrames to files
     # Member catalogue
@@ -2340,9 +2344,10 @@ def mockcatls_simbox_plot(param_dict, proj_dict, catl_ext='.hdf5',
     n_catls       = len(catl_path_arr)
     ## Filename
     fname = os.path.join(   proj_dict['fig_dir'],
-                            '{0}_{1}_xyz_mocks.{2}'.format(
+                            '{0}_{1}_{2}_xyz_mocks.{3}'.format(
                                 param_dict['survey'],
                                 param_dict['halotype'],
+                                param_dict['cosmo_choice'],
                                 fig_fmt))
     ## Setting up figure
     x_label = r'\boldmath X [Mpc $\mathrm{h^{-1}}$]'
@@ -2460,9 +2465,10 @@ def mocks_lum_function(param_dict, proj_dict, catl_ext='.hdf5',
     n_catls       = len(catl_path_arr)
     ## Filename
     fname = os.path.join(   proj_dict['fig_dir'],
-                            '{0}_{1}_lum_function_mocks.{2}'.format(
+                            '{0}_{1}_{2}_lum_function_mocks.{3}'.format(
                                 param_dict['survey'],
                                 param_dict['halotype'],
+                                param_dict['cosmo_choice'],
                                 fig_fmt))
     # Colormap
     cm      = plt.get_cmap('gist_rainbow')

@@ -169,8 +169,6 @@ def get_analysis_params(param_dict):
     params_pd_data: pandas DataFrame
         DataFrame with necessary parameters to run `sdss data create`
 
-    params_pd_mocks: pandas DataFrame
-        DataFrame with necessary parameters to run `sdss mocks create`
     """
     ##
     ## Array of values used for the analysis.
@@ -267,8 +265,7 @@ def get_exec_string(params_pd_data, param_dict):
 
     return string_dict
 
-def file_construction_and_execution(params_pd_data, params_pd_mocks, 
-    param_dict):
+def file_construction_and_execution(params_pd_data, param_dict):
     """
     1) Creates file that has shell commands to run executable
     2) Executes the file, which creates a screen session with the executables
@@ -360,12 +357,10 @@ def main(args):
     param_dict = vars(args)
     ##
     ## Parameters for the analysis
-    (   params_pd_data ,
-        params_pd_mocks) = get_analysis_params(param_dict)
+    params_pd_data = get_analysis_params(param_dict)
     ##
     ## Running analysis
     file_construction_and_execution(    params_pd_data ,
-                                        params_pd_mocks,
                                         param_dict     )
 
 # Main function

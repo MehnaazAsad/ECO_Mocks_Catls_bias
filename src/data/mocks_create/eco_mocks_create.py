@@ -1237,7 +1237,8 @@ def mr_survey_matching(clf_pd, param_dict, proj_dict):
     clf_galprop_pd = pd.merge(clf_pd, clf_pd_mod_prop, 
                                 left_index=True, right_index=True)
     ## Saving DataFrame
-    cu.pandas_df_to_hdf5_file(clf_galprop_pd, param_dict['clf_galprop_out'])
+    cu.pandas_df_to_hdf5_file(clf_galprop_pd, param_dict['clf_galprop_out'],
+        key='galcatl')
     cu.File_Exists(param_dict['clf_galprop_out'])
     # Print statement
     if param_dict['verbose']:

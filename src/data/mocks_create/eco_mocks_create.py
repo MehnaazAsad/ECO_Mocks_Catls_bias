@@ -2318,11 +2318,19 @@ def mockcatls_simbox_plot(param_dict, proj_dict, catl_ext='.hdf5',
     for kk, catl_kk in enumerate(tqdm(catl_path_arr)):
         # Reading parameters
         catl_kk_pd = cu.read_hdf5_file_to_pandas_DF(catl_kk)
+        # Color
+        color_kk = col_arr[kk]
         # Galaxy indices
-
-    
-
-
+        (   x_kk_arr,
+            y_kk_arr,
+            z_kk_arr) = catl_kk_pd[['x_orig','y_orig','z_orig']].values.T
+        ## Plotting points (galaxies)
+        ax1.plot(x_kk_arr, y_kk_arr, marker='o', color=color_kk,
+            markersize=markersize, linestyle='None', rasterized=True)
+        ax2.plot(x_kk_arr, z_kk_arr, marker='o', color=color_kk,
+            markersize=markersize, linestyle='None', rasterized=True)
+        ax3.plot(y_kk_arr, z_kk_arr, marker='o', color=color_kk,
+            markersize=markersize, linestyle='None', rasterized=True)
     # Adjusting space
     plt.subplots_adjust(top=0.86)
     plt.tight_layout()
@@ -2394,6 +2402,7 @@ def main(args):
     if param_dict['survey'] == 'ECO':
         eco_geometry_mocks(clf_pd, param_dict, proj_dict)
     ## Plotting different catalogues in simulation box
+    mockcatls_simbox_plot(param_dict, proj_dict)
 
 # Main function
 if __name__=='__main__':

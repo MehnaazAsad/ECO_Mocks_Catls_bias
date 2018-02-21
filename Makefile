@@ -6,12 +6,18 @@
 #################################################################################
 
 PROJECT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-BUCKET = [OPTIONAL] your-bucket-for-syncing-data (do not include 's3://')
-PROFILE = default
 PROJECT_NAME = ECO_Mocks_Catls
 PYTHON_INTERPRETER = python3
 ENVIRONMENT_FILE = environment.yml
 ENVIRONMENT_NAME = eco_mocks_catls
+
+DATA_DIR = $(PROJECT_DIR)/data
+SRC_DIR = $(PROJECT_DIR)/src/data
+MOCKS_CATL_DIR = $(DATA_DIR)/processed/*
+
+# CPU-Fraction
+CPU_FRAC = 0.75
+REMOVE_FILES = "True"
 
 ifeq (,$(shell which conda))
 HAS_CONDA=False
@@ -61,6 +67,36 @@ endif
 # PROJECT RULES                                                                 #
 #################################################################################
 
+## Create catalogues for `ECO`
+catl_mr_make:
+	@python $(SRC_DIR)/mocks_create_main.py -abopt mr -cpu_frac $(CPU_FRAC) -remove $(REMOVE_FILES)
+
+## Delete existing `mock` catalogues
+delete_mock_catls:
+	find $(MOCKS_CATL_DIR) -type f -name '*.hdf5' -name '*.gz' -delete
+
+## Delete all files, except for `raw` files
+delete_all_but_raw:
+	@rm -rf $(DATA_DIR)/external/*
+	@rm -rf $(DATA_DIR)/interim/*
+	@rm -rf $(DATA_DIR)/processed/*
+
+## Clean the `./data` folder and remove all of the files
+clean_data_dir:
+	@rm -rf $(DATA_DIR)/external/*
+	@rm -rf $(DATA_DIR)/interim/*
+	@rm -rf $(DATA_DIR)/processed/*
+	@rm -rf $(DATA_DIR)/raw/*
+
+## Run tests to see if all files (Halobias, catalogues) are in order
+test_files:
+	@pytest
+
+## Delete screens from creating catalogues
+delete_catl_screens:
+	screen -S "SDSS_Mocks_create" -X quit
+	screen -S "SDSS_Data_create" -X quit
+	screen -S "SDSS_Data_Mocks_create" -X quit
 
 
 #################################################################################

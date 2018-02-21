@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 # Victor Calderon
-# Created      : DATE
-# Last Modified: DATE
+# Created      : 02/20/2018
+# Last Modified: 02/20/2018
 # Vanderbilt University
 from __future__ import print_function, division, absolute_import
 __author__     =['Victor Calderon']
@@ -11,7 +11,7 @@ __copyright__  =["Copyright 2017 Victor Calderon, "]
 __email__      =['victor.calderon@vanderbilt.edu']
 __maintainer__ =['Victor Calderon']
 """
-
+Creates the catalogues for (1) ECO, (2) RESOLVE-A, and (3) RESOLVE-B surveys.
 """
 # Path to Custom Utilities folder
 import os
@@ -22,22 +22,15 @@ from path_variables import *
 # Importing Modules
 import src.data.utilities_python as cu
 import numpy as num
-import math
 import os
 import sys
 import pandas as pd
-import pickle
 import matplotlib
 matplotlib.use( 'Agg' )
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 plt.rc('text', usetex=True)
 from astropy.visualization import astropy_mpl_style
 plt.style.use(astropy_mpl_style)
-import seaborn as sns
-#sns.set()
-from progressbar import (Bar, ETA, FileTransferSpeed, Percentage, ProgressBar,
-                        ReverseBar, RotatingMarker)
 
 # Extra-modules
 from argparse import ArgumentParser
@@ -231,7 +224,9 @@ def get_parser():
     ## Option for removing file
     parser.add_argument('-remove',
                         dest='remove_files',
-                        help='Delete pickle file containing pair counts',
+                        help="""
+                        Delete files created by the script, in case the exist 
+                        already""",
                         type=_str2bool,
                         default=False)
     ## Program message

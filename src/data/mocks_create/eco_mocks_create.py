@@ -987,7 +987,7 @@ def clf_galprop_test(param_dict, proj_dict):
     clf_galprop_out = os.path.join( proj_dict['clf_dir'],
                             os.path.basename(hb_local) +'.clf.galprop')
     ## Checking if file exists
-    if cu.File_Exists(clf_galprop_out):
+    if os.path.exists(clf_galprop_out):
         if param_dict['remove_files']:
             os.remove(clf_galprop_out)
             clf_opt = False

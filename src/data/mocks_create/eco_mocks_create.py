@@ -1241,8 +1241,6 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
     if coord_dict_ul['dec_min'] < 0.:
         z_init_ul += num.abs(coord_dict_ul['dec_min'])
     z_mocks_n_ul = int(num.floor(param_dict['size_cube']/z_delta_ul))
-    ## Saving `coord_dict`
-    coord_dict_ul = coord_dict.copy()
     ## Determining positions
     for kk in range(z_mocks_n_ul):
         pos_coords_mocks.append([   x_init_ul, y_init_ul, z_init_ul,

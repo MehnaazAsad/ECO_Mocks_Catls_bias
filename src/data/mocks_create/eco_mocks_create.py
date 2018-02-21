@@ -1790,8 +1790,6 @@ def catl_create_main(zz_mock, pos_coords_mocks_zz, param_dict, proj_dict):
     size_cube = float(param_dict['size_cube'])
     ## Cartesian coordinates
     pos_zz = num.asarray([x_ii, y_ii, z_ii])
-    ## Index column
-    clf_ii.loc[:,'idx'] = clf_ii.index.values
     ## Formatting new positions
     ## Placing the observer at `pos_zz` and centering coordinates to center 
     ## of box
@@ -1987,6 +1985,8 @@ def clf_assignment(param_dict, proj_dict, choice_survey=2):
     ## Copy of galaxy positions
     for coord_zz in ['x','y','z']:
         clf_pd.loc[:, coord_zz+'_orig'] = clf_pd[coord_zz].values
+    ## Galaxy indices
+    clf_pd.loc[:,'idx'] = clf_pd.index.values
     ##
     ## Remove extra files
     os.remove(hb_clf_out_ff)
@@ -2317,7 +2317,7 @@ def mockcatls_simbox_plot(param_dict, proj_dict, catl_ext='.hdf5',
     ## Looping over different catalogues
     for kk, catl_kk in enumerate(tqdm(catl_path_arr)):
         # Reading parameters
-        catl_pd = cu.read_hdf5_file_to_pandas_DF(catl_kk)
+        catl_kk_pd = cu.read_hdf5_file_to_pandas_DF(catl_kk)
         # Galaxy indices
 
     

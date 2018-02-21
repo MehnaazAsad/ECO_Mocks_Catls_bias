@@ -17,8 +17,7 @@ __maintainer__ =['Victor Calderon']
 import os
 import sys
 import git
-from path_variables import git_root_dir
-sys.path.insert(0, os.path.realpath(git_root_dir(__file__)))
+from path_variables import *
 
 # Importing Modules
 import src.data.utilities_python as cu
@@ -63,7 +62,7 @@ from scipy.interpolate import interp1d
 
 ## Functions
 
-## -----------| Reading input arguments |----------- ##
+## ---------| Reading input arguments and other main functions |--------- ##
 
 class SortingHelpFormatter(HelpFormatter):
     def add_arguments(self, actions):
@@ -109,22 +108,6 @@ def _check_pos_val(val, val_min=0):
         raise argparse.ArgumentTypeError(msg)
 
     return ival
-
-def url_checker(url_str):
-    """
-    Checks if the `url_str` is a valid URL
-
-    Parameters
-    ----------
-    url_str: string
-        url of the website to probe
-    """
-    request = requests.get(url_str)
-    if request.status_code != 200:
-        msg = '`url_str` ({0}) does not exist'.format(url_str)
-        raise ValueError(msg)
-    else:
-        pass
 
 def is_valid_file(parser, arg):
     """
@@ -491,7 +474,23 @@ def val_consts():
 
     return const_dict
 
-## -----------| Survey-related functions |----------- ##
+## -----------| Tools and more-related functions |----------- ##
+
+def url_checker(url_str):
+    """
+    Checks if the `url_str` is a valid URL
+
+    Parameters
+    ----------
+    url_str: string
+        url of the website to probe
+    """
+    request = requests.get(url_str)
+    if request.status_code != 200:
+        msg = '`url_str` ({0}) does not exist'.format(url_str)
+        raise ValueError(msg)
+    else:
+        pass
 
 def Mr_group_calc(gal_mr_arr):
     """
@@ -791,6 +790,572 @@ def z_comoving_calc(param_dict, proj_dict,
 
     return param_dict
 
+## -----------| Halobias-related functions |----------- ##
+
+def hb_file_construction_extras(param_dict, proj_dict):
+    """
+    Parameters
+    ----------
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        dictionary with info of the project that uses the
+        `Data Science` Cookiecutter template.
+
+    Returns
+    ---------
+    param_dict: python dictionary
+        dictionary with updated 'hb_file_mod' key, which is the 
+        path to the file with number of galaxies per halo ID.
+    """
+    Prog_msg = param_dict['Prog_msg']
+    ## Local halobias file
+    hb_local = param_dict['files_dict']['hb_file_local']
+    ## HaloID extras file
+    hb_file_mod = os.path.join(proj_dict['hb_files_dir'],
+                                    os.path.basename(hb_local)+'.mod')
+    ## Reading in file
+    print('{0} Reading in `hb_file`...'.format(Prog_msg))
+    with open(hb_local,'rb') as hb:
+        idat    = cu.fast_food_reader('int'  , 5, hb)
+        fdat    = cu.fast_food_reader('float', 9, hb)
+        znow    = cu.fast_food_reader('float', 1, hb)[0]
+        ngal    = int(idat[1])
+        lbox    = int(fdat[0])
+        x_arr   = cu.fast_food_reader('float' , ngal, hb)
+        y_arr   = cu.fast_food_reader('float' , ngal, hb)
+        z_arr   = cu.fast_food_reader('float' , ngal, hb)
+        vx_arr  = cu.fast_food_reader('float' , ngal, hb)
+        vy_arr  = cu.fast_food_reader('float' , ngal, hb)
+        vz_arr  = cu.fast_food_reader('float' , ngal, hb)
+        halom   = cu.fast_food_reader('float' , ngal, hb)
+        cs_flag = cu.fast_food_reader('int'   , ngal, hb)
+        haloid  = cu.fast_food_reader('int'   , ngal, hb)
+    ##
+    ## Counter of HaloIDs
+    haloid_counts = Counter(haloid)
+    # Array of `gals` in each `haloid`
+    haloid_ngal = [[] for x in range(ngal)]
+    for kk, halo_kk in enumerate(haloid):
+        haloid_ngal[kk] = haloid_counts[halo_kk]
+    haloid_ngal = num.asarray(haloid_ngal).astype(int)
+    ## Converting to Pandas DataFrame
+    # Dictionary
+    hb_dict = {}
+    hb_dict['x'          ] = x_arr
+    hb_dict['y'          ] = y_arr
+    hb_dict['z'          ] = z_arr
+    hb_dict['vx'         ] = vx_arr
+    hb_dict['vy'         ] = vy_arr
+    hb_dict['vz'         ] = vz_arr
+    hb_dict['halom'      ] = halom
+    hb_dict['loghalom'   ] = num.log10(halom)
+    hb_dict['cs_flag'    ] = cs_flag
+    hb_dict['haloid'     ] = haloid
+    hb_dict['haloid_ngal'] = haloid_ngal
+    # To DataFrame
+    hb_cols = ['x','y','z','vx','vy','vz','halom','loghalom',
+                'cs_flag','haloid','haloid_ngal']
+    hb_pd   = pd.DataFrame(hb_dict)[hb_cols]
+    ## Saving to file
+    hb_pd.to_csv(hb_file_mod, sep=" ", columns=hb_cols, 
+        index=False, header=False)
+    cu.File_Exists(hb_file_mod)
+    ## Assigning to `param_dict`
+    param_dict['hb_file_mod'] = hb_file_mod
+    param_dict['hb_cols'    ] = hb_cols
+    ## Testing `lbox`
+    try:
+        assert(lbox==param_dict['size_cube'])
+    except:
+        msg = '{0} `lbox` ({1}) does not match `size_cube` ({2})!'.format(
+            Prog_msg, lbox, param_dict['size_cube'])
+        raise ValueError(msg)
+    # Message
+    print('\n{0} Halo_ngal file: {1}'.format(Prog_msg, hb_file_mod))
+    print('{0} Creating file with Ngals in each halo ... Complete'.format(Prog_msg))
+
+    return param_dict
+
+def cen_sat_distance_calc(clf_pd, param_dict):
+    """
+    Computes the distance between the central and its satellites in a given 
+    DM halo
+
+    Parameters
+    ----------
+    clf_pd: pandas DataFrame
+        DataFrame with information from the CLF process
+            - x, y, z, vx, vy, vz: Positions and velocity components
+            - log(Mhalo): log-base 10 of the DM halo mass
+            - `cs_flag`: Central (1) / Satellite (0) designation
+            - `haloid`: ID of the galaxy's host DM halo
+            - `halo_ngal`: Total number of galaxies in the DM halo
+            - `M_r`: r-band absolute magnitude from ECO via abundance matching
+            - `galid`: Galaxy ID
+
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    Returns
+    ----------
+    clf_pd: pandas DataFrame
+        Updated version of `clf_pd` with new columns of distances
+        New key: `dist_c` --> Distance to the satellite's central galaxy
+    """
+    ##
+    ## TO DO: Fix issue with central and satellite being really close to 
+    ##        the box boundary, therefore having different final distances
+    ##
+    Prog_msg = param_dict['Prog_msg']
+    if param_dict['verbose']:
+        print('{0} Distance-Central Assignment ....'.format(Prog_msg))
+    ## Centrals and Satellites
+    cens            = param_dict['cens']
+    sats            = param_dict['sats']
+    dist_c_label    = 'dist_c'
+    dist_sq_c_label = 'dist_c_sq'
+    ## Galaxy coordinates
+    coords  = ['x'   ,'y'   , 'z'  ]
+    coords2 = ['x_sq','y_sq','z_sq']
+    ## Unique HaloIDs
+    haloid_unq = num.unique(clf_pd.loc[clf_pd['halo_ngal'] != 1,'haloid'])
+    n_halo_unq = len(haloid_unq)
+    ## CLF columns
+    clf_cols = ['x','z','y','haloid','cs_flag']
+    ## Copy of `clf_pd`
+    clf_pd_mod = clf_pd[clf_cols].copy()
+    ## Initializing new column in `clf_pd`
+    clf_pd_mod.loc[:,dist_sq_c_label] = num.zeros(clf_pd.shape[0])
+    ## Positions squared
+    clf_pd_mod.loc[:,'x_sq'] = clf_pd_mod['x']**2
+    clf_pd_mod.loc[:,'y_sq'] = clf_pd_mod['y']**2
+    clf_pd_mod.loc[:,'z_sq'] = clf_pd_mod['z']**2
+    ## Looping over number of halos
+    # ProgressBar properties
+    for ii, halo_ii in enumerate(tqdm(haloid_unq)):
+        ## Halo ID subsample
+        halo_ii_pd   = clf_pd_mod.loc[clf_pd_mod['haloid']==halo_ii]
+        ## Cens and Sats DataFrames
+        cens_coords = halo_ii_pd.loc[halo_ii_pd['cs_flag']==cens, coords]
+        sats_coords = halo_ii_pd.loc[halo_ii_pd['cs_flag']==sats, coords]
+        sats_idx    = sats_coords.index.values
+        ## Distances from central galaxy
+        cens_coords_mean = cens_coords.mean(axis=0).values
+        ## Difference in coordinates
+        dist_sq_arr = num.sum(
+            sats_coords.subtract(cens_coords_mean, axis=1).values**2, axis=1)
+        ## Assigning distances to each satellite
+        clf_pd_mod.loc[sats_idx, dist_sq_c_label] = dist_sq_arr
+    ##
+    ## Taking the square root of distances
+    clf_pd_mod.loc[:,dist_c_label] = (clf_pd_mod[dist_sq_c_label].values)**.5
+    ##
+    ## Assigning it to `clf_pd`
+    clf_pd.loc[:, dist_c_label] = clf_pd_mod[dist_c_label].values
+    if param_dict['verbose']:
+        print('{0} Distance-Central Assignment .... Done'.format(Prog_msg))
+
+    return clf_pd
+
+## -----------| CLF-related functions |----------- ##
+
+def clf_assignment(param_dict, proj_dict, choice_survey=2):
+    """
+    Computes the conditional luminosity function on the halobias file
+    
+    Parameters
+    ----------
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        dictionary with info of the project that uses the
+        `Data Science` Cookiecutter template.
+
+    Returns
+    ----------
+    clf_pd: pandas DataFrame
+        DataFrame with information from the CLF process
+        Format:
+            - x, y, z, vx, vy, vz: Positions and velocity components
+            - log(Mhalo): log-base 10 of the DM halo mass
+            - `cs_flag`: Central (1) / Satellite (0) designation
+            - `haloid`: ID of the galaxy's host DM halo
+            - `halo_ngal`: Total number of galaxies in the DM halo
+            - `M_r`: r-band absolute magnitude from ECO via abundance matching
+            - `galid`: Galaxy ID
+    """
+    Prog_msg = param_dict['Prog_msg']
+    if param_dict['verbose']:
+        print('{0} CLF Assignment ....'.format(Prog_msg))
+    ## Local halobias file
+    hb_local = param_dict['files_dict']['hb_file_local']
+    ## CLF Output file - ASCII and FF
+    hb_clf_out = os.path.join(  proj_dict['clf_dir'],
+                                os.path.basename(hb_local) +'.clf')
+    hb_clf_out_ff = hb_clf_out + '.ff'
+    ## HOD dictionary
+    hod_dict = param_dict['hod_dict']
+    ## CLF Executable
+    clf_exe = os.path.join( cu.get_code_c(),
+                            'CLF',
+                            'CLF_with_ftread')
+    cu.File_Exists(clf_exe)
+    ## CLF Commands - Executing in the terminal commands
+    cmd_arr = [ clf_exe,
+                hod_dict['logMmin'],
+                param_dict['clf_type'],
+                param_dict['hb_file_mod'],
+                param_dict['size_cube'],
+                param_dict['hod_dict']['znow'],
+                hb_clf_out_ff,
+                choice_survey,
+                param_dict['files_dict']['eco_lum_file_local'],
+                hb_clf_out]
+    cmd_str = '{0} {1} {2} {3} {4} {5} {6} {7} < {8} > {9}'
+    cmd     = cmd_str.format(*cmd_arr)
+    print(cmd)
+    subprocess.call(cmd, shell=True)
+    ##
+    ## Reading in CLF file
+    clf_cols = ['x','y','z','vx','vy','vz',
+                'loghalom','cs_flag','haloid','halo_ngal','M_r','galid']
+    clf_pd   = pd.read_csv(hb_clf_out, sep='\s+', header=None, names=clf_cols)
+    clf_pd.loc[:,'galid'] = clf_pd['galid'].astype(int)
+    ## Copy of galaxy positions
+    for coord_zz in ['x','y','z']:
+        clf_pd.loc[:, coord_zz+'_orig'] = clf_pd[coord_zz].values
+    ## Galaxy indices
+    clf_pd.loc[:,'idx'] = clf_pd.index.values
+    ##
+    ## Remove extra files
+    os.remove(hb_clf_out_ff)
+    if param_dict['verbose']:
+        print('{0} CLF Assignment .... Done'.format(Prog_msg))
+
+    return clf_pd
+
+def mr_survey_matching(clf_pd, param_dict, proj_dict):
+    """
+    Finds the closest r-band absolute magnitude from ECO catalogue 
+    and assigns them to mock galaxies
+
+    Parameters
+    -------------
+    clf_pd: pandas DataFrame
+        DataFrame containing information from Halobias + CLF procedures
+    
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        dictionary with info of the project that uses the
+        `Data Science` Cookiecutter template.
+
+    Returns
+    -------------
+    clf_galprop_pd: pandas DataFrame
+        DataFrame with updated values.
+        New values included:
+            - Morphology
+            - Stellar mass
+            - r-band apparent magnitude
+            - u-band apparent magnitude
+            - FSMGR
+            - `Match_Flag`:
+            - MHI
+            - Survey flag: {1 == ECO, 0 == Resolve B}
+    """
+    Prog_msg   = param_dict['Prog_msg']
+    if param_dict['verbose']:
+        print('{0} ECO/Resolve Galaxy Prop. Assign. ....'.format(Prog_msg))
+    ## Constants
+    failval    = 0.
+    ngal_mock  = len(clf_pd)
+    ## Survey flags
+    eco_flag = 1
+    res_flag = 0
+    ## Copy of `clf_pd`
+    clf_pd_mod = clf_pd.copy()
+    ## Filenames
+    eco_phot_file   = param_dict['files_dict']['eco_phot_file_local']
+    eco_mhi_file    = param_dict['files_dict']['mhi_file_local']
+    res_b_phot_file = param_dict['files_dict']['res_b_phot_file_local']
+    ## ECO Photometry catalogue
+    #  - reading in dictionary
+    eco_phot_dict = readsav(eco_phot_file, python_dict=True)
+    #  - Converting to Pandas DataFrame
+    eco_phot_pd   = Table(eco_phot_dict).to_pandas()
+    ##
+    ## ECO - MHI measurements
+    eco_mhi_pd    = pd.read_csv(eco_mhi_file, sep='\s+', names=['MHI'])
+    ## Appending to `eco_phot_pd`
+    try:
+        assert(len(eco_phot_pd) == len(eco_mhi_pd))
+        ## Adding to DataFrame
+        eco_phot_pd.loc[:,'MHI'] = eco_mhi_pd['MHI'].values
+    except:
+        msg = '{0} `len(eco_phot_pd)` != `len(eco_mhi_pd)`! Unequal lengths!'
+        msg = msg.format(Prog_msg)
+        raise ValueError(msg)
+    ##
+    ## Cleaning up DataFrame - r-band absolute magnitudes
+    eco_phot_mod_pd = eco_phot_pd.loc[(eco_phot_pd['goodnewabsr'] != failval) &
+                      (eco_phot_pd['goodnewabsr'] < param_dict['mr_limit'])]
+    eco_phot_mod_pd.reset_index(inplace=True, drop=True)
+    ##
+    ## Reading in `RESOLVE B` catalogue - r-band absolute magnitudes
+    res_phot_pd = Table(fits.getdata(res_b_phot_file)).to_pandas()
+    res_phot_mod_pd = res_phot_pd.loc[\
+                        (res_phot_pd['ABSMAGR'] != failval) &
+                        (res_phot_pd['ABSMAGR'] <= param_dict['mr_res_b']) &
+                        (res_phot_pd['ABSMAGR'] >  param_dict['mr_eco'  ])]
+    res_phot_mod_pd.reset_index(inplace=True, drop=True)
+    ##
+    ## Initializing arrays
+    morph_arr       = [[] for x in range(ngal_mock)]
+    dex_rmag_arr    = [[] for x in range(ngal_mock)]
+    dex_umag_arr    = [[] for x in range(ngal_mock)]
+    logmstar_arr    = [[] for x in range(ngal_mock)]
+    fsmgr_arr       = [[] for x in range(ngal_mock)]
+    survey_flag_arr = [[] for x in range(ngal_mock)]
+    mhi_arr         = [[] for x in range(ngal_mock)]
+    ##
+    ## Assigning galaxy properties to mock galaxies
+    #
+    clf_mr_arr = clf_pd_mod['M_r'].values
+    eco_mr_arr = eco_phot_mod_pd['goodnewabsr'].values
+    res_mr_arr = res_phot_mod_pd['ABSMAGR'].values
+    ## Galaxy properties column names
+    eco_cols = ['goodmorph','rpsmoothrestrmagnew','rpsmoothrestumagnew',
+                'rpgoodmstarsnew','rpmeanssfr']
+    res_cols = ['MORPH', 'SMOOTHRESTRMAG','SMOOTHRESTUMAG','MSTARS',
+                'MODELFSMGR']
+    # Looping over all galaxies
+    for ii in tqdm(range(ngal_mock)):
+        ## Galaxy r-band absolute magnitude
+        gal_mr = clf_mr_arr[ii]
+        ## Choosing which catalogue to use
+        if gal_mr <= param_dict['mr_eco']:
+            idx_match  = cu.closest_val(gal_mr, eco_mr_arr)
+            survey_tag = eco_flag
+            ## Galaxy Properties
+            (   morph_val,
+                rmag_val ,
+                umag_val ,
+                logmstar_val,
+                fsmgr_val) = eco_phot_mod_pd.loc[idx_match, eco_cols].values
+            # MHI value
+            mhi_val   = 10**(eco_phot_mod_pd['MHI'][idx_match] + logmstar_val)
+        elif (gal_mr > param_dict['mr_eco']) and (gal_mr <= param_dict['mr_res_b']):
+            idx_match  = cu.closest_val(gal_mr, res_mr_arr)
+            survey_tag = res_flag
+            ## Galaxy Properties
+            (   morph_val,
+                rmag_val ,
+                umag_val ,
+                mstar_val,
+                fsmgr_val) = res_phot_mod_pd.loc[idx_match, res_cols]
+            ## MHI value
+            mhi_val = res_phot_mod_pd.loc[idx_match, 'MHI']
+            ## Fixing issue with units
+            logmstar_val = num.log10(mstar_val)
+        ##
+        ## Assigning them to arrays
+        morph_arr       [ii] = morph_val
+        dex_rmag_arr    [ii] = rmag_val
+        dex_umag_arr    [ii] = umag_val
+        logmstar_arr    [ii] = logmstar_val
+        fsmgr_arr       [ii] = fsmgr_val
+        mhi_arr         [ii] = mhi_val
+        survey_flag_arr [ii] = survey_tag
+    ##
+    ## Assigning them to `clf_pd_mod`
+    clf_pd_mod.loc[:,'morph'      ] = morph_arr
+    clf_pd_mod.loc[:,'rmag'       ] = dex_rmag_arr
+    clf_pd_mod.loc[:,'umag'       ] = dex_umag_arr
+    clf_pd_mod.loc[:,'logmstar'   ] = logmstar_arr
+    clf_pd_mod.loc[:,'fsmgr'      ] = fsmgr_arr
+    clf_pd_mod.loc[:,'mhi'        ] = mhi_arr
+    clf_pd_mod.loc[:,'survey_flag'] = survey_flag_arr
+    clf_pd_mod.loc[:,'u_r'        ] = clf_pd_mod['umag'] - clf_pd_mod['rmag']
+    ##
+    ## Dropping all other columns
+    galprop_cols = ['morph','rmag','umag','logmstar','fsmgr','mhi',
+                    'survey_flag', 'u_r']
+    clf_pd_mod_prop = clf_pd_mod[galprop_cols].copy()
+    ##
+    ## Merging DataFrames
+    clf_galprop_pd = pd.merge(clf_pd, clf_pd_mod_prop, 
+                                left_index=True, right_index=True)
+    if param_dict['verbose']:
+        print('{0} ECO/Resolve Galaxy Prop. Assign. ....Done'.format(Prog_msg))
+
+    return clf_galprop_pd
+
+## -----------| Makemock-related functions |----------- ##
+
+def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
+    """
+    Carves out the geometry of the `ECO` survey and produces set 
+    of mock catalogues
+    
+    Parameters
+    -------------
+    clf_pd: pandas DataFrame
+        DataFrame containing information from Halobias + CLF procedures
+    
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        dictionary with info of the project that uses the
+        `Data Science` Cookiecutter template.
+    """
+    ## Constants
+    Prog_msg = param_dict['Prog_msg']
+    if param_dict['verbose']:
+        print('{0} Creating Mock Catalogues ....'.format(Prog_msg))
+
+    ## Coordinates dictionary
+    coord_dict    = param_dict['coord_dict'].copy()
+    ## Coordinate and Dataframe lists
+    pos_coords_mocks = []
+    ##############################################
+    ###### ----- X-Y Upper Left Mocks  -----######
+    ##############################################
+    clf_ul_pd     = copy.deepcopy(clf_pd)
+    coord_dict_ul = coord_dict.copy()
+    # Coordinates
+    coord_dict_ul['ra_min']  = 90. - coord_dict_ul['ra_range']
+    coord_dict_ul['ra_max']  = 90.
+    coord_dict_ul['ra_diff'] = coord_dict_ul['ra_max_real'] - coord_dict_ul['ra_max']
+    gap_ul     = 20.
+    x_init_ul  = 10.
+    y_init_ul  = param_dict['size_cube'] - coord_dict_ul['r_arr'][1] - 5.
+    z_init_ul  = 10.
+    z_delta_ul = gap_ul + coord_dict_ul['d_th']
+    if coord_dict_ul['dec_min'] < 0.:
+        z_init_ul += num.abs(coord_dict_ul['dec_min'])
+    z_mocks_n_ul = int(num.floor(param_dict['size_cube']/z_delta_ul))
+    ## Saving `coord_dict`
+    coord_dict_ul = coord_dict.copy()
+    ## Determining positions
+    for kk in range(z_mocks_n_ul):
+        pos_coords_mocks.append([   x_init_ul, y_init_ul, z_init_ul,
+                                    clf_ul_pd.copy(), coord_dict_ul])
+        z_init_ul += z_delta_ul
+    ##############################################
+    ###### ----- X-Y Upper Right Mocks -----######
+    ##############################################
+    clf_ur_pd     = copy.deepcopy(clf_pd)
+    coord_dict_ur = copy.deepcopy(coord_dict_ul)
+    # Coordinates
+    coord_dict_ur['ra_min' ] = 90. - coord_dict_ur['ra_range']
+    coord_dict_ur['ra_max' ] = 90.
+    coord_dict_ur['ra_diff'] = coord_dict_ur['ra_max_real'] - coord_dict_ur['ra_max']
+    x_init_ur = param_dict['size_cube'] - coord_dict_ur['r_arr'][1] - 5.
+    y_init_ur = param_dict['size_cube'] - coord_dict_ur['r_arr'][1] - 10.
+    z_init_ur = 10.
+    if coord_dict_ur['dec_min'] < 0.:
+        z_init_ur += num.abs(coord_dict_ur['dec_min'])
+    z_mocks_n_ur = int(num.floor(param_dict['size_cube']/z_delta_ul))
+    ## Determining positions
+    for kk in range(z_mocks_n_ur):
+        pos_coords_mocks.append([   x_init_ur, y_init_ur, z_init_ur,
+                                    clf_ur_pd.copy(), coord_dict_ur])
+        z_init_ur += z_delta_ul
+    ##############################################
+    ###### ----- X-Y Lower Left Mocks  -----######
+    ##############################################
+    clf_ll_pd     = copy.deepcopy(clf_pd)
+    coord_dict_ll = copy.deepcopy(coord_dict_ur)
+    ## Changing geometry
+    coord_dict_ll['ra_min' ] = 180.
+    coord_dict_ll['ra_max' ] = 180. + coord_dict_ll['ra_range']
+    coord_dict_ll['ra_diff'] = coord_dict_ll['ra_max_real'] - coord_dict_ll['ra_max']
+    assert( (coord_dict_ll['ra_min'] < coord_dict_ll['ra_max']) and 
+            (coord_dict_ll['ra_min'] <= 360.) and
+            (coord_dict_ll['ra_max'] <= 360.))
+    ## New positions
+    x_init_ll = coord_dict_ll['r_arr'][1]
+    y_init_ll = coord_dict_ll['r_arr'][1]
+    z_init_ll = 10.
+    if coord_dict_ll['dec_min'] < 0.:
+        z_init_ll += num.abs(coord_dict_ll['dec_min'])
+    z_mocks_n_ll = int(num.floor(param_dict['size_cube']/z_delta_ul))
+    ## Saving new positions
+    for kk in range(z_mocks_n_ll):
+        pos_coords_mocks.append([   x_init_ll, y_init_ll, z_init_ll,
+                                    clf_ll_pd.copy(), coord_dict_ll])
+        z_init_ll += z_delta_ul
+    ##############################################
+    ###### ----- X-Y Lower Right Mocks -----######
+    ##############################################
+    clf_lr_pd     = copy.deepcopy(clf_pd)
+    coord_dict_lr = copy.deepcopy(coord_dict_ul)
+    # Changing geometry
+    coord_dict_lr['ra_min' ] = 270. - coord_dict_lr['ra_range']
+    coord_dict_lr['ra_max' ] = 270.
+    coord_dict_lr['ra_diff'] = coord_dict_lr['ra_max_real'] - coord_dict_lr['ra_max']
+    # New positions
+    x_init_lr = coord_dict_lr['r_arr'][1]
+    x_init_lr = param_dict['size_cube'] - 10.
+    y_init_lr = coord_dict_lr['r_arr'][1] - 15.
+    z_init_lr = 10.
+    if coord_dict_lr['dec_min'] < 0.:
+        z_init_lr += num.abs(coord_dict_lr['dec_min'])
+    z_mocks_n_lr = int(num.floor(param_dict['size_cube']/z_delta_ul))
+    ## Saving new positions
+    for kk in range(z_mocks_n_lr):
+        pos_coords_mocks.append([   x_init_lr, y_init_lr, z_init_lr,
+                                    clf_lr_pd.copy(), coord_dict_lr])
+        z_init_lr += z_delta_ul
+    ##############################################
+    ## Creating mock catalogues
+    ##############################################
+    ##
+    ## ----| Multiprocessing |---- ##
+    ##
+    ## Number of catalogues
+    n_catls = len(pos_coords_mocks)
+    ## CPU counts
+    cpu_number = int(cpu_count() * param_dict['cpu_frac'])
+    ## Step-size for each CPU
+    if cpu_number <= len(pos_coords_mocks):
+        catl_step = int(n_catls / cpu_number)
+        memb_arr  = num.arange(0, n_catls+1, catl_step)
+    else:
+        catl_step = int((n_catls/cpu_number)**-1)
+        memb_arr  = num.arange(0, n_catls+1)
+    ## Array with designated catalogue numbers for each CPU
+    memb_arr[-1] = n_catls
+    ## Tuples of the ID of each catalogue
+    memb_tuples = num.asarray([(memb_arr[xx], memb_arr[xx+1])
+                            for xx in range(memb_arr.size-1)])
+    ## Assigning `memb_tuples` to function `multiprocessing_catls`
+    print('{0} Creating Mock Catalogues ....'.format(param_dict['Prog_msg']))
+    procs = []
+    for ii in range(len(memb_tuples)):
+        ## Defining `proc` element
+        proc = Process(target=multiprocessing_catls,
+                        args=(  memb_tuples[ii], pos_coords_mocks, param_dict, 
+                                proj_dict, ii))
+        # Appending to main `procs` list
+        procs.append(proc)
+        proc.start()
+    ##
+    ## Joining `procs`
+    for proc in procs:
+        proc.join()
+    ##
+    ## Reinitializing `param_dict` to None
+    if param_dict['verbose']:
+        print('{0} Creating Mock Catalogues .... Done'.format(Prog_msg))
+    param_dict = None
+
 def makemock_catl(clf_ii, coord_dict_ii, zz_mock, param_dict, proj_dict):
     """
     Function that calculates distances and redshift-space distortions 
@@ -974,6 +1539,227 @@ def makemock_catl(clf_ii, coord_dict_ii, zz_mock, param_dict, proj_dict):
             zz_mock))
 
     return mock_pd, mock_catl_pd_file
+
+def catl_create_main(zz_mock, pos_coords_mocks_zz, param_dict, proj_dict):
+    """
+    Distributes the analyis of the creation of mock catalogues into 
+    more than 1 processor
+
+    Parameters
+    -----------
+    zz_mock: int
+        number of the mock catalogue being analyzed
+
+    pos_coords_mocks: tuples, shape (4,)
+        tuple with the positons coordinates, coordinate dictionary, 
+        and DataFrame to be used
+
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        dictionary with info of the project that uses the
+        `Data Science` Cookiecutter template.
+
+    Returns
+    -----------
+
+    """
+    ## Constants
+    Prog_msg = param_dict['Prog_msg']
+    ## Deciding which catalogues to read
+    ## Reading in input parameters
+    # Copy of 'pos_coords_mocks_zz'
+    pos_coords_mocks_zz_copy = copy.deepcopy(pos_coords_mocks_zz)
+    # Paramters
+    (   x_ii         ,
+        y_ii         ,
+        z_ii         ,
+        clf_ii       ,
+        coord_dict_ii) = pos_coords_mocks_zz_copy
+    ## Size of cube
+    size_cube = float(param_dict['size_cube'])
+    ## Cartesian coordinates
+    pos_zz = num.asarray([x_ii, y_ii, z_ii])
+    ## Formatting new positions
+    ## Placing the observer at `pos_zz` and centering coordinates to center 
+    ## of box
+    for kk, coord_kk in enumerate(['x','y','z']):
+        ## Moving observer
+        clf_ii.loc[:,coord_kk] = clf_ii[coord_kk] - pos_zz[kk]
+        ## Periodic boundaries
+        clf_ii_neg = clf_ii.loc[clf_ii[coord_kk] <= -(size_cube/2.)].index
+        clf_ii_pos = clf_ii.loc[clf_ii[coord_kk] >=  (size_cube/2.)].index
+        ## Fixing negative values
+        if len(clf_ii_neg) != 0:
+            clf_ii.loc[clf_ii_neg, coord_kk] += size_cube
+        if len(clf_ii_pos) != 0:
+            clf_ii.loc[clf_ii_pos, coord_kk] -= size_cube
+    ##
+    ## Interpolating values for redshift and comoving distance
+    ## and adding redshift-space distortions
+    (   mock_pd     ,
+        mock_zz_file) = makemock_catl(  clf_ii, coord_dict_ii, zz_mock,
+                                        param_dict, proj_dict)
+    ##
+    ## Group-finding
+    (   mockgal_pd  ,
+        mockgroup_pd) = group_finding(  mock_pd, mock_zz_file, 
+                                        param_dict, proj_dict)
+    ##
+    ## Group mass, group galaxy type, and total Mr/Mstar for groups
+    (   mockgal_pd  ,
+        mockgroup_pd) = group_mass_assignment(mockgal_pd, mockgroup_pd, 
+                            param_dict, proj_dict)
+    ##
+    ## Halo Rvir
+    mockgal_pd = halos_rvir_calc(mockgal_pd, param_dict)
+    ##
+    ## Dropping columns from `mockgal_pd` and `mockgroup_pd`
+    ##
+    ## Writing output files - `Normal Catalogues`
+    writing_to_output_file(mockgal_pd, mockgroup_pd, zz_mock,
+        param_dict, proj_dict, perf_catl=False)
+
+## -----------| Survey-related functions |----------- ##
+
+def survey_specs(param_dict):
+    """
+    Provides the specifications of the survey being created
+
+    Parameters
+    ----------
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    Returns
+    ----------
+    param_dict: python dictionary
+        dictionary with the 'updated' project variables
+    """
+    ## Cosmological model
+    cosmo_model = param_dict['cosmo_model']
+    ## Redshift, volumen and r-mag limit for each survey
+    if param_dict['survey'] == 'A':
+        czmin      = 2532.
+        czmax      = 7470.
+        # survey_vol = 20957.7789388
+        mr_limit   = -17.33
+    elif param_dict['survey'] == 'B':
+        czmin      = 4250.
+        czmax      = 7250.
+        # survey_vol = 15908.063125
+        mr_limit   = -17.00
+    elif param_dict['survey'] == 'ECO':
+        czmin      = 2532.
+        czmax      = 7470.
+        # survey_vol = 192294.221932
+        mr_limit   = -17.33
+    ##
+    ## Right Ascension and Declination coordinates for each survey
+    if param_dict['survey'] == 'A':
+        ra_min_real = 131.25
+        ra_max_real = 236.25
+        dec_min     = 0.
+        dec_max     = 5.
+        # Extras
+        dec_range   = dec_max - dec_min
+        ra_range    = ra_max_real - ra_min_real
+        ra_min      = (180. - ra_range)/2.
+        ra_max      = ra_min + ra_range
+        ra_diff     = ra_max_real - ra_max
+        # Assert statements
+        assert(dec_min < dec_max)
+        assert(ra_range >= 0)
+        assert(ra_min < ra_max)
+        assert(ra_min_real < ra_max_real)
+    elif param_dict['survey'] == 'B':
+        ra_min_real = 330.
+        ra_max_real = 45.
+        dec_min     = -1.25
+        dec_max     = 1.25
+        # Extras
+        dec_range   = dec_max - dec_min
+        ra_range    = ra_max_real - (ra_min_real - 360.)
+        ra_min      = (180. - ra_range)/2.
+        ra_max      = ra_min + ra_range
+        ra_diff     = ra_max_real - ra_max
+        # Assert statements
+        assert(dec_min < dec_max)
+        assert(ra_range >= 0)
+        assert(ra_min < ra_max)
+    elif param_dict['survey'] == 'ECO':
+        ra_min_real = 130.05
+        ra_max_real = 237.45
+        dec_min     = -1
+        dec_max     = 49.85
+        # Extras
+        dec_range   = dec_max - dec_min
+        ra_range    = ra_max_real - ra_min_real
+        ra_min      = (180. - ra_range)/2.
+        ra_max      = ra_min + ra_range
+        ra_diff     = ra_max_real - ra_max
+        # Assert statements
+        assert(dec_min < dec_max)
+        assert(ra_range >= 0)
+        assert(ra_min < ra_max)
+        assert(ra_min_real < ra_max_real)
+    ## Survey volume
+    km_s       = u.km/u.s
+    z_arr      = (num.array([czmin, czmax])*km_s/(ac.c.to(km_s))).value
+    z_arr      = (num.array([czmin, czmax])*km_s/(3e5*km_s)).value
+    r_arr      = cosmo_model.comoving_distance(z_arr).to(u.Mpc).value
+    survey_vol = cu.survey_vol( [0, ra_range],
+                                [dec_min, dec_max],
+                                r_arr)
+    ##
+    ## Survey height, and other geometrical factors
+    (   h_total,
+        h1     ,
+        s1_top ,
+        s2     ) = cu.geometry_calc(r_arr[0], r_arr[1], ra_range)
+    (   h_side ,
+        h2     ,
+        s1_side,
+        d_th   ) = cu.geometry_calc(r_arr[0], r_arr[1], dec_range)
+    ##
+    # ra_dec dictionary
+    coord_dict = {}
+    coord_dict['ra_min_real'] = ra_min_real
+    coord_dict['ra_max_real'] = ra_max_real
+    coord_dict['dec_min'    ] = dec_min
+    coord_dict['dec_max'    ] = dec_max
+    coord_dict['dec_range'  ] = dec_range
+    coord_dict['ra_range'   ] = ra_range
+    coord_dict['ra_min'     ] = ra_min
+    coord_dict['ra_max'     ] = ra_max
+    coord_dict['ra_diff'    ] = ra_diff
+    # Height and other geometrical objects
+    coord_dict['h_total'    ] = h_total
+    coord_dict['s1_top'     ] = s1_top
+    coord_dict['s2'         ] = s2
+    coord_dict['h1'         ] = h1
+    coord_dict['h_side'     ] = h_side
+    coord_dict['s1_side'    ] = s1_side
+    coord_dict['d_th'       ] = d_th
+    coord_dict['h2'         ] = h2
+    coord_dict['r_arr'      ] = r_arr
+    ##
+    ## Resolve-B Mr limit
+    mr_eco   = -17.33
+    mr_res_b = -17.00
+    ## Saving to `param_dict`
+    param_dict['czmin'     ] = czmin
+    param_dict['czmax'     ] = czmax
+    param_dict['zmin'      ] = z_arr[0]
+    param_dict['zmax'      ] = z_arr[1]
+    param_dict['survey_vol'] = survey_vol
+    param_dict['mr_limit'  ] = mr_limit
+    param_dict['mr_eco'    ] = mr_eco
+    param_dict['mr_res_b'  ] = mr_res_b
+    param_dict['coord_dict'] = coord_dict
+
+    return param_dict
 
 def group_finding(mock_pd, mock_zz_file, param_dict, proj_dict,
     file_ext='csv'):
@@ -1263,8 +2049,7 @@ def catl_drop_cols(mockgal_pd, mockgroup_pd, param_dict):
     ## Columns
     # gal_cols = 
 
-
-## --------- Halo Rvir calculation ------------##
+## ---------| Halo Rvir calculation |------------##
 
 def halos_rvir_calc(mockgal_pd, param_dict, catl_sim_eq=False):
     """
@@ -1349,7 +2134,7 @@ def halos_rvir_calc(mockgal_pd, param_dict, catl_sim_eq=False):
 
     return mockgal_pd_new
 
-## --------- Writing to files ------------##
+## ---------| Writing to Files |------------##
 
 def writing_to_output_file(mockgal_pd, mockgroup_pd, zz_mock, 
     param_dict, proj_dict, output_fmt = 'hdf5', perf_catl=False):
@@ -1414,828 +2199,6 @@ def writing_to_output_file(mockgal_pd, mockgroup_pd, zz_mock,
     cu.File_Exists(group_file)
     print('{0} gal_file  : {1}'.format(param_dict['Prog_msg'], gal_file))
     print('{0} group_file: {1}'.format(param_dict['Prog_msg'], group_file))
-
-## -----------| Survey-related functions |----------- ##
-
-def survey_specs(param_dict):
-    """
-    Provides the specifications of the survey being created
-
-    Parameters
-    ----------
-    param_dict: python dictionary
-        dictionary with `project` variables
-
-    Returns
-    ----------
-    param_dict: python dictionary
-        dictionary with the 'updated' project variables
-    """
-    ## Cosmological model
-    cosmo_model = param_dict['cosmo_model']
-    ## Redshift, volumen and r-mag limit for each survey
-    if param_dict['survey'] == 'A':
-        czmin      = 2532.
-        czmax      = 7470.
-        # survey_vol = 20957.7789388
-        mr_limit   = -17.33
-    elif param_dict['survey'] == 'B':
-        czmin      = 4250.
-        czmax      = 7250.
-        # survey_vol = 15908.063125
-        mr_limit   = -17.00
-    elif param_dict['survey'] == 'ECO':
-        czmin      = 2532.
-        czmax      = 7470.
-        # survey_vol = 192294.221932
-        mr_limit   = -17.33
-    ##
-    ## Right Ascension and Declination coordinates for each survey
-    if param_dict['survey'] == 'A':
-        ra_min_real = 131.25
-        ra_max_real = 236.25
-        dec_min     = 0.
-        dec_max     = 5.
-        # Extras
-        dec_range   = dec_max - dec_min
-        ra_range    = ra_max_real - ra_min_real
-        ra_min      = (180. - ra_range)/2.
-        ra_max      = ra_min + ra_range
-        ra_diff     = ra_max_real - ra_max
-        # Assert statements
-        assert(dec_min < dec_max)
-        assert(ra_range >= 0)
-        assert(ra_min < ra_max)
-        assert(ra_min_real < ra_max_real)
-    elif param_dict['survey'] == 'B':
-        ra_min_real = 330.
-        ra_max_real = 45.
-        dec_min     = -1.25
-        dec_max     = 1.25
-        # Extras
-        dec_range   = dec_max - dec_min
-        ra_range    = ra_max_real - (ra_min_real - 360.)
-        ra_min      = (180. - ra_range)/2.
-        ra_max      = ra_min + ra_range
-        ra_diff     = ra_max_real - ra_max
-        # Assert statements
-        assert(dec_min < dec_max)
-        assert(ra_range >= 0)
-        assert(ra_min < ra_max)
-    elif param_dict['survey'] == 'ECO':
-        ra_min_real = 130.05
-        ra_max_real = 237.45
-        dec_min     = -1
-        dec_max     = 49.85
-        # Extras
-        dec_range   = dec_max - dec_min
-        ra_range    = ra_max_real - ra_min_real
-        ra_min      = (180. - ra_range)/2.
-        ra_max      = ra_min + ra_range
-        ra_diff     = ra_max_real - ra_max
-        # Assert statements
-        assert(dec_min < dec_max)
-        assert(ra_range >= 0)
-        assert(ra_min < ra_max)
-        assert(ra_min_real < ra_max_real)
-    ## Survey volume
-    km_s       = u.km/u.s
-    z_arr      = (num.array([czmin, czmax])*km_s/(ac.c.to(km_s))).value
-    z_arr      = (num.array([czmin, czmax])*km_s/(3e5*km_s)).value
-    r_arr      = cosmo_model.comoving_distance(z_arr).to(u.Mpc).value
-    survey_vol = cu.survey_vol( [0, ra_range],
-                                [dec_min, dec_max],
-                                r_arr)
-    ##
-    ## Survey height, and other geometrical factors
-    (   h_total,
-        h1     ,
-        s1_top ,
-        s2     ) = cu.geometry_calc(r_arr[0], r_arr[1], ra_range)
-    (   h_side ,
-        h2     ,
-        s1_side,
-        d_th   ) = cu.geometry_calc(r_arr[0], r_arr[1], dec_range)
-    ##
-    # ra_dec dictionary
-    coord_dict = {}
-    coord_dict['ra_min_real'] = ra_min_real
-    coord_dict['ra_max_real'] = ra_max_real
-    coord_dict['dec_min'    ] = dec_min
-    coord_dict['dec_max'    ] = dec_max
-    coord_dict['dec_range'  ] = dec_range
-    coord_dict['ra_range'   ] = ra_range
-    coord_dict['ra_min'     ] = ra_min
-    coord_dict['ra_max'     ] = ra_max
-    coord_dict['ra_diff'    ] = ra_diff
-    # Height and other geometrical objects
-    coord_dict['h_total'    ] = h_total
-    coord_dict['s1_top'     ] = s1_top
-    coord_dict['s2'         ] = s2
-    coord_dict['h1'         ] = h1
-    coord_dict['h_side'     ] = h_side
-    coord_dict['s1_side'    ] = s1_side
-    coord_dict['d_th'       ] = d_th
-    coord_dict['h2'         ] = h2
-    coord_dict['r_arr'      ] = r_arr
-    ##
-    ## Resolve-B Mr limit
-    mr_eco   = -17.33
-    mr_res_b = -17.00
-    ## Saving to `param_dict`
-    param_dict['czmin'     ] = czmin
-    param_dict['czmax'     ] = czmax
-    param_dict['zmin'      ] = z_arr[0]
-    param_dict['zmax'      ] = z_arr[1]
-    param_dict['survey_vol'] = survey_vol
-    param_dict['mr_limit'  ] = mr_limit
-    param_dict['mr_eco'    ] = mr_eco
-    param_dict['mr_res_b'  ] = mr_res_b
-    param_dict['coord_dict'] = coord_dict
-
-    return param_dict
-
-def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
-    """
-    Carves out the geometry of the `ECO` survey and produces set 
-    of mock catalogues
-    
-    Parameters
-    -------------
-    clf_pd: pandas DataFrame
-        DataFrame containing information from Halobias + CLF procedures
-    
-    param_dict: python dictionary
-        dictionary with `project` variables
-
-    proj_dict: python dictionary
-        dictionary with info of the project that uses the
-        `Data Science` Cookiecutter template.
-    """
-    ## Constants
-    Prog_msg = param_dict['Prog_msg']
-    if param_dict['verbose']:
-        print('{0} Creating Mock Catalogues ....'.format(Prog_msg))
-
-    ## Coordinates dictionary
-    coord_dict    = param_dict['coord_dict'].copy()
-    ## Coordinate and Dataframe lists
-    pos_coords_mocks = []
-    ##############################################
-    ###### ----- X-Y Upper Left Mocks  -----######
-    ##############################################
-    clf_ul_pd     = copy.deepcopy(clf_pd)
-    coord_dict_ul = coord_dict.copy()
-    # Coordinates
-    coord_dict_ul['ra_min']  = 90. - coord_dict_ul['ra_range']
-    coord_dict_ul['ra_max']  = 90.
-    coord_dict_ul['ra_diff'] = coord_dict_ul['ra_max_real'] - coord_dict_ul['ra_max']
-    gap_ul     = 20.
-    x_init_ul  = 10.
-    y_init_ul  = param_dict['size_cube'] - coord_dict_ul['r_arr'][1] - 5.
-    z_init_ul  = 10.
-    z_delta_ul = gap_ul + coord_dict_ul['d_th']
-    if coord_dict_ul['dec_min'] < 0.:
-        z_init_ul += num.abs(coord_dict_ul['dec_min'])
-    z_mocks_n_ul = int(num.floor(param_dict['size_cube']/z_delta_ul))
-    ## Saving `coord_dict`
-    coord_dict_ul = coord_dict.copy()
-    ## Determining positions
-    for kk in range(z_mocks_n_ul):
-        pos_coords_mocks.append([   x_init_ul, y_init_ul, z_init_ul,
-                                    clf_ul_pd.copy(), coord_dict_ul])
-        z_init_ul += z_delta_ul
-    ##############################################
-    ###### ----- X-Y Upper Right Mocks -----######
-    ##############################################
-    clf_ur_pd     = copy.deepcopy(clf_pd)
-    coord_dict_ur = copy.deepcopy(coord_dict_ul)
-    # Coordinates
-    coord_dict_ur['ra_min' ] = 90. - coord_dict_ur['ra_range']
-    coord_dict_ur['ra_max' ] = 90.
-    coord_dict_ur['ra_diff'] = coord_dict_ur['ra_max_rea'] - coord_dict_ur['ra_max']
-    x_init_ur = param_dict['size_cube'] - coord_dict_ur['r_arr'][1] - 5.
-    y_init_ur = param_dict['size_cube'] - coord_dict_ur['r_arr'][1] - 10.
-    z_init_ur = 10.
-    if coord_dict_ur['dec_min'] < 0.:
-        z_init_ur += num.abs(coord_dict_ur['dec_min'])
-    z_mocks_n_ur = int(num.floor(param_dict['size_cube']/z_delta_ul))
-    ## Determining positions
-    for kk in range(z_mocks_n_ur):
-        pos_coords_mocks.append([   x_init_ur, y_init_ur, z_init_ur,
-                                    clf_ur_pd.copy(), coord_dict_ur])
-        z_init_ur += z_delta_ul
-    ##############################################
-    ###### ----- X-Y Lower Left Mocks  -----######
-    ##############################################
-    clf_ll_pd     = copy.deepcopy(clf_pd)
-    coord_dict_ll = copy.deepcopy(coord_dict_ur)
-    ## Changing geometry
-    coord_dict_ll['ra_min' ] = 180.
-    coord_dict_ll['ra_max' ] = 180. + coord_dict_ll['ra_range']
-    coord_dict_ll['ra_diff'] = coord_dict_ll['ra_max_real'] - coord_dict_ll['ra_max']
-    assert( (coord_dict_ll['ra_min'] < coord_dict_ll['ra_max']) and 
-            (coord_dict_ll['ra_min'] <= 360.) and
-            (coord_dict_ll['ra_max'] <= 360.))
-    ## New positions
-    x_init_ll = coord_dict_ll['r_arr'][1]
-    y_init_ll = coord_dict_ll['r_arr'][1]
-    z_init_ll = 10.
-    if coord_dict_ll['dec_min'] < 0.:
-        z_init_ll += num.abs(coord_dict_ll['dec_min'])
-    z_mocks_n_ll = int(num.floor(param_dict['size_cube']/z_delta_ul))
-    ## Saving new positions
-    for kk in range(z_mocks_n_ll):
-        pos_coords_mocks.append([   x_init_ll, y_init_ll, z_init_ll,
-                                    clf_ll_pd.copy(), coord_dict_ll])
-        z_init_ll += z_delta_ul
-    ##############################################
-    ###### ----- X-Y Lower Right Mocks -----######
-    ##############################################
-    clf_lr_pd     = copy.deepcopy(clf_pd)
-    coord_dict_lr = copy.deepcopy(coord_dict_ul)
-    # Changing geometry
-    coord_dict_lr['ra_min' ] = 270. - coord_dict_lr['ra_range']
-    coord_dict_lr['ra_max' ] = 270.
-    coord_dict_lr['ra_diff'] = coord_dict_lr['ra_max_real'] - coord_dict_lr['ra_max']
-    # New positions
-    x_init_lr = coord_dict_lr['r_arr'][1]
-    x_init_lr = param_dict['size_cube'] - 10.
-    y_init_lr = coord_dict_lr['r_arr'][1] - 15.
-    z_init_lr = 10.
-    if coord_dict_lr['dec_min'] < 0.:
-        z_init_lr += num.abs(coord_dict_lr['dec_min'])
-    z_mocks_n_lr = int(num.floor(param_dict['size_cube']/z_delta_ul))
-    ## Saving new positions
-    for kk in range(z_mocks_n_lr):
-        pos_coords_mocks.append([   x_init_lr, y_init_lr, z_init_lr,
-                                    clf_lr_pd.copy(), coord_dict_lr])
-        z_init_lr += z_delta_ul
-    ##############################################
-    ## Creating mock catalogues
-    ##############################################
-    ##
-    ## ----| Multiprocessing |---- ##
-    ##
-    ## Number of catalogues
-    n_catls = len(pos_coords_mocks)
-    ## CPU counts
-    cpu_number = int(cpu_count() * param_dict['cpu_frac'])
-    ## Step-size for each CPU
-    if cpu_number <= len(pos_coords_mocks):
-        catl_step = int(n_catls / cpu_number)
-        memb_arr  = num.arange(0, n_catls+1, catl_step)
-    else:
-        catl_step = int((n_catls/cpu_number)**-1)
-        memb_arr  = num.arange(0, n_catls+1)
-    ## Array with designated catalogue numbers for each CPU
-    memb_arr[-1] = n_catls
-    ## Tuples of the ID of each catalogue
-    memb_tuples = num.asarray([(memb_arr[xx], memb_arr[xx+1])
-                            for xx in range(memb_arr.size-1)])
-    ## Assigning `memb_tuples` to function `multiprocessing_catls`
-    print('{0} Creating Mock Catalogues ....'.format(param_dict['Prog_msg']))
-    procs = []
-    for ii in range(len(memb_tuples)):
-        ## Defining `proc` element
-        proc = Process(target=multiprocessing_catls,
-                        args=(  memb_tuples[ii], pos_coords_mocks, param_dict, 
-                                proj_dict, ii))
-        # Appending to main `procs` list
-        procs.append(proc)
-        proc.start()
-    ##
-    ## Joining `procs`
-    for proc in procs:
-        proc.join()
-    ##
-    ## Reinitializing `param_dict` to None
-    if param_dict['verbose']:
-        print('{0} Creating Mock Catalogues .... Done'.format(Prog_msg))
-    param_dict = None
-
-def multiprocessing_catls(memb_tuples_ii, pos_coords_mocks, param_dict, 
-    proj_dict, ii_mock):
-    """
-    Distributes the analyis of the creation of mock catalogues into 
-    more than 1 processor
-
-    Parameters
-    -----------
-    memb_tuples_ii: tuple
-        tuple of catalogue indices to be analyzed
-
-    pos_coords_mocks_ii: tuple, shape (4,)
-        tuple with the positons coordinates, coordinate dictionary, 
-        and DataFrame to be used
-
-    param_dict: python dictionary
-        dictionary with `project` variables
-
-    proj_dict: python dictionary
-        dictionary with info of the project that uses the
-        `Data Science` Cookiecutter template.
-
-    ii_mock: int
-        number of the mock catalogue being analyzed
-
-    Returns
-    -----------
-    """
-    ## Program Message
-    Prog_msg = param_dict['Prog_msg']
-    ## Reading which catalogues to process
-    start_ii, end_ii = memb_tuples_ii
-    ##
-    ## Looping over the desired catalogues
-    for zz in range(start_ii, end_ii):
-        ## Making z'th catalogue
-        catl_create_main(zz, pos_coords_mocks[zz], param_dict, proj_dict)
-
-def catl_create_main(zz_mock, pos_coords_mocks_zz, param_dict, proj_dict):
-    """
-    Distributes the analyis of the creation of mock catalogues into 
-    more than 1 processor
-
-    Parameters
-    -----------
-    zz_mock: int
-        number of the mock catalogue being analyzed
-
-    pos_coords_mocks: tuples, shape (4,)
-        tuple with the positons coordinates, coordinate dictionary, 
-        and DataFrame to be used
-
-    param_dict: python dictionary
-        dictionary with `project` variables
-
-    proj_dict: python dictionary
-        dictionary with info of the project that uses the
-        `Data Science` Cookiecutter template.
-
-    Returns
-    -----------
-
-    """
-    ## Constants
-    Prog_msg = param_dict['Prog_msg']
-    ## Deciding which catalogues to read
-    ## Reading in input parameters
-    # Copy of 'pos_coords_mocks_zz'
-    pos_coords_mocks_zz_copy = copy.deepcopy(pos_coords_mocks_zz)
-    # Paramters
-    (   x_ii         ,
-        y_ii         ,
-        z_ii         ,
-        clf_ii       ,
-        coord_dict_ii) = pos_coords_mocks_zz_copy
-    ## Size of cube
-    size_cube = float(param_dict['size_cube'])
-    ## Cartesian coordinates
-    pos_zz = num.asarray([x_ii, y_ii, z_ii])
-    ## Formatting new positions
-    ## Placing the observer at `pos_zz` and centering coordinates to center 
-    ## of box
-    for kk, coord_kk in enumerate(['x','y','z']):
-        ## Moving observer
-        clf_ii.loc[:,coord_kk] = clf_ii[coord_kk] - pos_zz[kk]
-        ## Periodic boundaries
-        clf_ii_neg = clf_ii.loc[clf_ii[coord_kk] <= -(size_cube/2.)].index
-        clf_ii_pos = clf_ii.loc[clf_ii[coord_kk] >=  (size_cube/2.)].index
-        ## Fixing negative values
-        if len(clf_ii_neg) != 0:
-            clf_ii.loc[clf_ii_neg, coord_kk] += size_cube
-        if len(clf_ii_pos) != 0:
-            clf_ii.loc[clf_ii_pos, coord_kk] -= size_cube
-    ##
-    ## Interpolating values for redshift and comoving distance
-    ## and adding redshift-space distortions
-    (   mock_pd     ,
-        mock_zz_file) = makemock_catl(  clf_ii, coord_dict_ii, zz_mock,
-                                        param_dict, proj_dict)
-    ##
-    ## Group-finding
-    (   mockgal_pd  ,
-        mockgroup_pd) = group_finding(  mock_pd, mock_zz_file, 
-                                        param_dict, proj_dict)
-    ##
-    ## Group mass, group galaxy type, and total Mr/Mstar for groups
-    (   mockgal_pd  ,
-        mockgroup_pd) = group_mass_assignment(mockgal_pd, mockgroup_pd, 
-                            param_dict, proj_dict)
-    ##
-    ## Halo Rvir
-    mockgal_pd = halos_rvir_calc(mockgal_pd, param_dict)
-    ##
-    ## Dropping columns from `mockgal_pd` and `mockgroup_pd`
-    ##
-    ## Writing output files - `Normal Catalogues`
-    writing_to_output_file(mockgal_pd, mockgroup_pd, zz_mock,
-        param_dict, proj_dict, perf_catl=False)
-
-
-## -----------| Halobias-related functions |----------- ##
-
-def hb_file_construction_extras(param_dict, proj_dict):
-    """
-    Parameters
-    ----------
-    param_dict: python dictionary
-        dictionary with `project` variables
-
-    proj_dict: python dictionary
-        dictionary with info of the project that uses the
-        `Data Science` Cookiecutter template.
-
-    Returns
-    ---------
-    param_dict: python dictionary
-        dictionary with updated 'hb_file_mod' key, which is the 
-        path to the file with number of galaxies per halo ID.
-    """
-    Prog_msg = param_dict['Prog_msg']
-    ## Local halobias file
-    hb_local = param_dict['files_dict']['hb_file_local']
-    ## HaloID extras file
-    hb_file_mod = os.path.join(proj_dict['hb_files_dir'],
-                                    os.path.basename(hb_local)+'.mod')
-    ## Reading in file
-    print('{0} Reading in `hb_file`...'.format(Prog_msg))
-    with open(hb_local,'rb') as hb:
-        idat    = cu.fast_food_reader('int'  , 5, hb)
-        fdat    = cu.fast_food_reader('float', 9, hb)
-        znow    = cu.fast_food_reader('float', 1, hb)[0]
-        ngal    = int(idat[1])
-        lbox    = int(fdat[0])
-        x_arr   = cu.fast_food_reader('float' , ngal, hb)
-        y_arr   = cu.fast_food_reader('float' , ngal, hb)
-        z_arr   = cu.fast_food_reader('float' , ngal, hb)
-        vx_arr  = cu.fast_food_reader('float' , ngal, hb)
-        vy_arr  = cu.fast_food_reader('float' , ngal, hb)
-        vz_arr  = cu.fast_food_reader('float' , ngal, hb)
-        halom   = cu.fast_food_reader('float' , ngal, hb)
-        cs_flag = cu.fast_food_reader('int'   , ngal, hb)
-        haloid  = cu.fast_food_reader('int'   , ngal, hb)
-    ##
-    ## Counter of HaloIDs
-    haloid_counts = Counter(haloid)
-    # Array of `gals` in each `haloid`
-    haloid_ngal = [[] for x in range(ngal)]
-    for kk, halo_kk in enumerate(haloid):
-        haloid_ngal[kk] = haloid_counts[halo_kk]
-    haloid_ngal = num.asarray(haloid_ngal).astype(int)
-    ## Converting to Pandas DataFrame
-    # Dictionary
-    hb_dict = {}
-    hb_dict['x'          ] = x_arr
-    hb_dict['y'          ] = y_arr
-    hb_dict['z'          ] = z_arr
-    hb_dict['vx'         ] = vx_arr
-    hb_dict['vy'         ] = vy_arr
-    hb_dict['vz'         ] = vz_arr
-    hb_dict['halom'      ] = halom
-    hb_dict['loghalom'   ] = num.log10(halom)
-    hb_dict['cs_flag'    ] = cs_flag
-    hb_dict['haloid'     ] = haloid
-    hb_dict['haloid_ngal'] = haloid_ngal
-    # To DataFrame
-    hb_cols = ['x','y','z','vx','vy','vz','halom','loghalom',
-                'cs_flag','haloid','haloid_ngal']
-    hb_pd   = pd.DataFrame(hb_dict)[hb_cols]
-    ## Saving to file
-    hb_pd.to_csv(hb_file_mod, sep=" ", columns=hb_cols, 
-        index=False, header=False)
-    cu.File_Exists(hb_file_mod)
-    ## Assigning to `param_dict`
-    param_dict['hb_file_mod'] = hb_file_mod
-    param_dict['hb_cols'    ] = hb_cols
-    ## Testing `lbox`
-    try:
-        assert(lbox==param_dict['size_cube'])
-    except:
-        msg = '{0} `lbox` ({1}) does not match `size_cube` ({2})!'.format(
-            Prog_msg, lbox, param_dict['size_cube'])
-        raise ValueError(msg)
-    # Message
-    print('\n{0} Halo_ngal file: {1}'.format(Prog_msg, hb_file_mod))
-    print('{0} Creating file with Ngals in each halo ... Complete'.format(Prog_msg))
-
-    return param_dict
-
-def clf_assignment(param_dict, proj_dict, choice_survey=2):
-    """
-    Computes the conditional luminosity function on the halobias file
-    
-    Parameters
-    ----------
-    param_dict: python dictionary
-        dictionary with `project` variables
-
-    proj_dict: python dictionary
-        dictionary with info of the project that uses the
-        `Data Science` Cookiecutter template.
-
-    Returns
-    ----------
-    clf_pd: pandas DataFrame
-        DataFrame with information from the CLF process
-        Format:
-            - x, y, z, vx, vy, vz: Positions and velocity components
-            - log(Mhalo): log-base 10 of the DM halo mass
-            - `cs_flag`: Central (1) / Satellite (0) designation
-            - `haloid`: ID of the galaxy's host DM halo
-            - `halo_ngal`: Total number of galaxies in the DM halo
-            - `M_r`: r-band absolute magnitude from ECO via abundance matching
-            - `galid`: Galaxy ID
-    """
-    Prog_msg = param_dict['Prog_msg']
-    if param_dict['verbose']:
-        print('{0} CLF Assignment ....'.format(Prog_msg))
-    ## Local halobias file
-    hb_local = param_dict['files_dict']['hb_file_local']
-    ## CLF Output file - ASCII and FF
-    hb_clf_out = os.path.join(  proj_dict['clf_dir'],
-                                os.path.basename(hb_local) +'.clf')
-    hb_clf_out_ff = hb_clf_out + '.ff'
-    ## HOD dictionary
-    hod_dict = param_dict['hod_dict']
-    ## CLF Executable
-    clf_exe = os.path.join( cu.get_code_c(),
-                            'CLF',
-                            'CLF_with_ftread')
-    cu.File_Exists(clf_exe)
-    ## CLF Commands - Executing in the terminal commands
-    cmd_arr = [ clf_exe,
-                hod_dict['logMmin'],
-                param_dict['clf_type'],
-                param_dict['hb_file_mod'],
-                param_dict['size_cube'],
-                param_dict['hod_dict']['znow'],
-                hb_clf_out_ff,
-                choice_survey,
-                param_dict['files_dict']['eco_lum_file_local'],
-                hb_clf_out]
-    cmd_str = '{0} {1} {2} {3} {4} {5} {6} {7} < {8} > {9}'
-    cmd     = cmd_str.format(*cmd_arr)
-    print(cmd)
-    subprocess.call(cmd, shell=True)
-    ##
-    ## Reading in CLF file
-    clf_cols = ['x','y','z','vx','vy','vz',
-                'loghalom','cs_flag','haloid','halo_ngal','M_r','galid']
-    clf_pd   = pd.read_csv(hb_clf_out, sep='\s+', header=None, names=clf_cols)
-    clf_pd.loc[:,'galid'] = clf_pd['galid'].astype(int)
-    ## Copy of galaxy positions
-    for coord_zz in ['x','y','z']:
-        clf_pd.loc[:, coord_zz+'_orig'] = clf_pd[coord_zz].values
-    ## Galaxy indices
-    clf_pd.loc[:,'idx'] = clf_pd.index.values
-    ##
-    ## Remove extra files
-    os.remove(hb_clf_out_ff)
-    if param_dict['verbose']:
-        print('{0} CLF Assignment .... Done'.format(Prog_msg))
-
-    return clf_pd
-
-def cen_sat_distance_calc(clf_pd, param_dict):
-    """
-    Computes the distance between the central and its satellites in a given 
-    DM halo
-
-    Parameters
-    ----------
-    clf_pd: pandas DataFrame
-        DataFrame with information from the CLF process
-            - x, y, z, vx, vy, vz: Positions and velocity components
-            - log(Mhalo): log-base 10 of the DM halo mass
-            - `cs_flag`: Central (1) / Satellite (0) designation
-            - `haloid`: ID of the galaxy's host DM halo
-            - `halo_ngal`: Total number of galaxies in the DM halo
-            - `M_r`: r-band absolute magnitude from ECO via abundance matching
-            - `galid`: Galaxy ID
-
-    param_dict: python dictionary
-        dictionary with `project` variables
-
-    Returns
-    ----------
-    clf_pd: pandas DataFrame
-        Updated version of `clf_pd` with new columns of distances
-        New key: `dist_c` --> Distance to the satellite's central galaxy
-    """
-    ##
-    ## TO DO: Fix issue with central and satellite being really close to 
-    ##        the box boundary, therefore having different final distances
-    ##
-    Prog_msg = param_dict['Prog_msg']
-    if param_dict['verbose']:
-        print('{0} Distance-Central Assignment ....'.format(Prog_msg))
-    ## Centrals and Satellites
-    cens            = param_dict['cens']
-    sats            = param_dict['sats']
-    dist_c_label    = 'dist_c'
-    dist_sq_c_label = 'dist_c_sq'
-    ## Galaxy coordinates
-    coords  = ['x'   ,'y'   , 'z'  ]
-    coords2 = ['x_sq','y_sq','z_sq']
-    ## Unique HaloIDs
-    haloid_unq = num.unique(clf_pd.loc[clf_pd['halo_ngal'] != 1,'haloid'])
-    n_halo_unq = len(haloid_unq)
-    ## CLF columns
-    clf_cols = ['x','z','y','haloid','cs_flag']
-    ## Copy of `clf_pd`
-    clf_pd_mod = clf_pd[clf_cols].copy()
-    ## Initializing new column in `clf_pd`
-    clf_pd_mod.loc[:,dist_sq_c_label] = num.zeros(clf_pd.shape[0])
-    ## Positions squared
-    clf_pd_mod.loc[:,'x_sq'] = clf_pd_mod['x']**2
-    clf_pd_mod.loc[:,'y_sq'] = clf_pd_mod['y']**2
-    clf_pd_mod.loc[:,'z_sq'] = clf_pd_mod['z']**2
-    ## Looping over number of halos
-    # ProgressBar properties
-    for ii, halo_ii in enumerate(tqdm(haloid_unq)):
-        ## Halo ID subsample
-        halo_ii_pd   = clf_pd_mod.loc[clf_pd_mod['haloid']==halo_ii]
-        ## Cens and Sats DataFrames
-        cens_coords = halo_ii_pd.loc[halo_ii_pd['cs_flag']==cens, coords]
-        sats_coords = halo_ii_pd.loc[halo_ii_pd['cs_flag']==sats, coords]
-        sats_idx    = sats_coords.index.values
-        ## Distances from central galaxy
-        cens_coords_mean = cens_coords.mean(axis=0).values
-        ## Difference in coordinates
-        dist_sq_arr = num.sum(
-            sats_coords.subtract(cens_coords_mean, axis=1).values**2, axis=1)
-        ## Assigning distances to each satellite
-        clf_pd_mod.loc[sats_idx, dist_sq_c_label] = dist_sq_arr
-    ##
-    ## Taking the square root of distances
-    clf_pd_mod.loc[:,dist_c_label] = (clf_pd_mod[dist_sq_c_label].values)**.5
-    ##
-    ## Assigning it to `clf_pd`
-    clf_pd.loc[:, dist_c_label] = clf_pd_mod[dist_c_label].values
-    if param_dict['verbose']:
-        print('{0} Distance-Central Assignment .... Done'.format(Prog_msg))
-
-    return clf_pd
-
-def mr_survey_matching(clf_pd, param_dict, proj_dict):
-    """
-    Finds the closest r-band absolute magnitude from ECO catalogue 
-    and assigns them to mock galaxies
-
-    Parameters
-    -------------
-    clf_pd: pandas DataFrame
-        DataFrame containing information from Halobias + CLF procedures
-    
-    param_dict: python dictionary
-        dictionary with `project` variables
-
-    proj_dict: python dictionary
-        dictionary with info of the project that uses the
-        `Data Science` Cookiecutter template.
-
-    Returns
-    -------------
-    clf_galprop_pd: pandas DataFrame
-        DataFrame with updated values.
-        New values included:
-            - Morphology
-            - Stellar mass
-            - r-band apparent magnitude
-            - u-band apparent magnitude
-            - FSMGR
-            - `Match_Flag`:
-            - MHI
-            - Survey flag: {1 == ECO, 0 == Resolve B}
-    """
-    Prog_msg   = param_dict['Prog_msg']
-    if param_dict['verbose']:
-        print('{0} ECO/Resolve Galaxy Prop. Assign. ....'.format(Prog_msg))
-    ## Constants
-    failval    = 0.
-    ngal_mock  = len(clf_pd)
-    ## Survey flags
-    eco_flag = 1
-    res_flag = 0
-    ## Copy of `clf_pd`
-    clf_pd_mod = clf_pd.copy()
-    ## Filenames
-    eco_phot_file   = param_dict['files_dict']['eco_phot_file_local']
-    eco_mhi_file    = param_dict['files_dict']['mhi_file_local']
-    res_b_phot_file = param_dict['files_dict']['res_b_phot_file_local']
-    ## ECO Photometry catalogue
-    #  - reading in dictionary
-    eco_phot_dict = readsav(eco_phot_file, python_dict=True)
-    #  - Converting to Pandas DataFrame
-    eco_phot_pd   = Table(eco_phot_dict).to_pandas()
-    ##
-    ## ECO - MHI measurements
-    eco_mhi_pd    = pd.read_csv(eco_mhi_file, sep='\s+', names=['MHI'])
-    ## Appending to `eco_phot_pd`
-    try:
-        assert(len(eco_phot_pd) == len(eco_mhi_pd))
-        ## Adding to DataFrame
-        eco_phot_pd.loc[:,'MHI'] = eco_mhi_pd['MHI'].values
-    except:
-        msg = '{0} `len(eco_phot_pd)` != `len(eco_mhi_pd)`! Unequal lengths!'
-        msg = msg.format(Prog_msg)
-        raise ValueError(msg)
-    ##
-    ## Cleaning up DataFrame - r-band absolute magnitudes
-    eco_phot_mod_pd = eco_phot_pd.loc[(eco_phot_pd['goodnewabsr'] != failval) &
-                      (eco_phot_pd['goodnewabsr'] < param_dict['mr_limit'])]
-    eco_phot_mod_pd.reset_index(inplace=True, drop=True)
-    ##
-    ## Reading in `RESOLVE B` catalogue - r-band absolute magnitudes
-    res_phot_pd = Table(fits.getdata(res_b_phot_file)).to_pandas()
-    res_phot_mod_pd = res_phot_pd.loc[\
-                        (res_phot_pd['ABSMAGR'] != failval) &
-                        (res_phot_pd['ABSMAGR'] <= param_dict['mr_res_b']) &
-                        (res_phot_pd['ABSMAGR'] >  param_dict['mr_eco'  ])]
-    res_phot_mod_pd.reset_index(inplace=True, drop=True)
-    ##
-    ## Initializing arrays
-    morph_arr       = [[] for x in range(ngal_mock)]
-    dex_rmag_arr    = [[] for x in range(ngal_mock)]
-    dex_umag_arr    = [[] for x in range(ngal_mock)]
-    logmstar_arr    = [[] for x in range(ngal_mock)]
-    fsmgr_arr       = [[] for x in range(ngal_mock)]
-    survey_flag_arr = [[] for x in range(ngal_mock)]
-    mhi_arr         = [[] for x in range(ngal_mock)]
-    ##
-    ## Assigning galaxy properties to mock galaxies
-    #
-    clf_mr_arr = clf_pd_mod['M_r'].values
-    eco_mr_arr = eco_phot_mod_pd['goodnewabsr'].values
-    res_mr_arr = res_phot_mod_pd['ABSMAGR'].values
-    ## Galaxy properties column names
-    eco_cols = ['goodmorph','rpsmoothrestrmagnew','rpsmoothrestumagnew',
-                'rpgoodmstarsnew','rpmeanssfr']
-    res_cols = ['MORPH', 'SMOOTHRESTRMAG','SMOOTHRESTUMAG','MSTARS',
-                'MODELFSMGR']
-    # Looping over all galaxies
-    for ii in tqdm(range(ngal_mock)):
-        ## Galaxy r-band absolute magnitude
-        gal_mr = clf_mr_arr[ii]
-        ## Choosing which catalogue to use
-        if gal_mr <= param_dict['mr_eco']:
-            idx_match  = cu.closest_val(gal_mr, eco_mr_arr)
-            survey_tag = eco_flag
-            ## Galaxy Properties
-            (   morph_val,
-                rmag_val ,
-                umag_val ,
-                logmstar_val,
-                fsmgr_val) = eco_phot_mod_pd.loc[idx_match, eco_cols].values
-            # MHI value
-            mhi_val   = 10**(eco_phot_mod_pd['MHI'][idx_match] + logmstar_val)
-        elif (gal_mr > param_dict['mr_eco']) and (gal_mr <= param_dict['mr_res_b']):
-            idx_match  = cu.closest_val(gal_mr, res_mr_arr)
-            survey_tag = res_flag
-            ## Galaxy Properties
-            (   morph_val,
-                rmag_val ,
-                umag_val ,
-                mstar_val,
-                fsmgr_val) = res_phot_mod_pd.loc[idx_match, res_cols]
-            ## MHI value
-            mhi_val = res_phot_mod_pd.loc[idx_match, 'MHI']
-            ## Fixing issue with units
-            logmstar_val = num.log10(mstar_val)
-        ##
-        ## Assigning them to arrays
-        morph_arr       [ii] = morph_val
-        dex_rmag_arr    [ii] = rmag_val
-        dex_umag_arr    [ii] = umag_val
-        logmstar_arr    [ii] = logmstar_val
-        fsmgr_arr       [ii] = fsmgr_val
-        mhi_arr         [ii] = mhi_val
-        survey_flag_arr [ii] = survey_tag
-    ##
-    ## Assigning them to `clf_pd_mod`
-    clf_pd_mod.loc[:,'morph'      ] = morph_arr
-    clf_pd_mod.loc[:,'rmag'       ] = dex_rmag_arr
-    clf_pd_mod.loc[:,'umag'       ] = dex_umag_arr
-    clf_pd_mod.loc[:,'logmstar'   ] = logmstar_arr
-    clf_pd_mod.loc[:,'fsmgr'      ] = fsmgr_arr
-    clf_pd_mod.loc[:,'mhi'        ] = mhi_arr
-    clf_pd_mod.loc[:,'survey_flag'] = survey_flag_arr
-    clf_pd_mod.loc[:,'u_r'        ] = clf_pd_mod['umag'] - clf_pd_mod['rmag']
-    ##
-    ## Dropping all other columns
-    galprop_cols = ['morph','rmag','umag','logmstar','fsmgr','mhi',
-                    'survey_flag', 'u_r']
-    clf_pd_mod_prop = clf_pd_mod[galprop_cols].copy()
-    ##
-    ## Merging DataFrames
-    clf_galprop_pd = pd.merge(clf_pd, clf_pd_mod_prop, 
-                                left_index=True, right_index=True)
-    if param_dict['verbose']:
-        print('{0} ECO/Resolve Galaxy Prop. Assign. ....Done'.format(Prog_msg))
-
-    return clf_galprop_pd
 
 ## -----------| Plotting-related functions |----------- ##
 
@@ -2346,13 +2309,45 @@ def mockcatls_simbox_plot(param_dict, proj_dict, catl_ext='.hdf5',
     plt.clf()
     plt.close()
 
+## ---------| Multiprocessing |------------##
 
+def multiprocessing_catls(memb_tuples_ii, pos_coords_mocks, param_dict, 
+    proj_dict, ii_mock):
+    """
+    Distributes the analyis of the creation of mock catalogues into 
+    more than 1 processor
 
+    Parameters
+    -----------
+    memb_tuples_ii: tuple
+        tuple of catalogue indices to be analyzed
 
+    pos_coords_mocks_ii: tuple, shape (4,)
+        tuple with the positons coordinates, coordinate dictionary, 
+        and DataFrame to be used
 
+    param_dict: python dictionary
+        dictionary with `project` variables
 
+    proj_dict: python dictionary
+        dictionary with info of the project that uses the
+        `Data Science` Cookiecutter template.
 
+    ii_mock: int
+        number of the mock catalogue being analyzed
 
+    Returns
+    -----------
+    """
+    ## Program Message
+    Prog_msg = param_dict['Prog_msg']
+    ## Reading which catalogues to process
+    start_ii, end_ii = memb_tuples_ii
+    ##
+    ## Looping over the desired catalogues
+    for zz in range(start_ii, end_ii):
+        ## Making z'th catalogue
+        catl_create_main(zz, pos_coords_mocks[zz], param_dict, proj_dict)
 
 ## -----------| Main functions |----------- ##
 

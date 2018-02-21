@@ -347,7 +347,7 @@ def file_construction_and_execution(params_pd_data, param_dict):
     ##
     ## Running script
     print(".>>> Running Script....")
-    # os.system("{0}".format(outfile_path))
+    os.system("{0}".format(outfile_path))
 
 def main(args):
     """

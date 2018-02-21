@@ -962,6 +962,51 @@ def cen_sat_distance_calc(clf_pd, param_dict):
 
 ## -----------| CLF-related functions |----------- ##
 
+def clf_galprop_test(param_dict, proj_dict):
+    """
+    Tests whether or not the `FINAL` CLF file exists
+
+    Parameters
+    -----------
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        dictionary with info of the project that uses the
+        `Data Science` Cookiecutter template.
+
+    Returns
+    -----------
+    param_dict: python dictionary
+        dictionary with `project` variables + `clf_opt` option, which 
+        tells whether or not the final CLF file version exists
+    """
+    ## Local halobias file
+    hb_local = param_dict['files_dict']['hb_file_local']
+    ## CLF Output file - ASCII and FF
+    clf_galprop_out = os.path.join( proj_dict['clf_dir'],
+                            os.path.basename(hb_local) +'.clf.galprop')
+    ## Checking if file exists
+    if cu.File_Exists(clf_galprop_out):
+        if param_dict['remove_files']:
+            os.remove(clf_galprop_out)
+            clf_opt = False
+            # Saving to `param_dict`
+            param_dict['clf_opt'] = clf_opt
+        else:
+            clf_opt = True
+            clf_pd  = cu.read_pandas_hdf5(clf_galprop_out)
+            # Saving to `param_dict`
+            param_dict['clf_opt'] = clf_opt
+            param_dict['clf_pd' ] = clf_pd
+    else:
+        param_dict['clf_opt'] = False
+    ##
+    ## Saving name of `clf_galprop_out`
+    param_dict['clf_galprop_out'] = clf_galprop_out
+
+    return param_dict
+
 def clf_assignment(param_dict, proj_dict, choice_survey=2):
     """
     Computes the conditional luminosity function on the halobias file
@@ -1191,6 +1236,10 @@ def mr_survey_matching(clf_pd, param_dict, proj_dict):
     ## Merging DataFrames
     clf_galprop_pd = pd.merge(clf_pd, clf_pd_mod_prop, 
                                 left_index=True, right_index=True)
+    ## Saving DataFrame
+    cu.pandas_df_to_hdf5_file(clf_galprop_pd, param_dict['clf_galprop_out'])
+    cu.File_Exists(param_dict['clf_galprop_out'])
+    # Print statement
     if param_dict['verbose']:
         print('{0} ECO/Resolve Galaxy Prop. Assign. ....Done'.format(Prog_msg))
 
@@ -2389,12 +2438,17 @@ def main(args):
     param_dict = z_comoving_calc(param_dict, proj_dict)
     ## Halobias Extras file - Modified Halobias file
     param_dict = hb_file_construction_extras(param_dict, proj_dict)
-    ## Conditional Luminosity Function
-    clf_pd = clf_assignment(param_dict, proj_dict)
-    ## Distance from Satellites to Centrals
-    clf_pd = cen_sat_distance_calc(clf_pd, param_dict)
-    ## Finding closest magnitude value from ECO catalogue
-    clf_pd = mr_survey_matching(clf_pd, param_dict, proj_dict)
+    ## Checking if final version of file exists
+    param_dict = clf_galprop_test(param_dict, proj_dict)
+    if not param_dict['clf_opt']:
+        ## Conditional Luminosity Function
+        clf_pd = clf_assignment(param_dict, proj_dict)
+        ## Distance from Satellites to Centrals
+        clf_pd = cen_sat_distance_calc(clf_pd, param_dict)
+        ## Finding closest magnitude value from ECO catalogue
+        clf_pd = mr_survey_matching(clf_pd, param_dict, proj_dict)
+    else:
+        clf_pd = param_dict['clf_pd']
     ## Carving out geometry of Survey and carrying out the analysis
     if param_dict['survey'] == 'ECO':
         eco_geometry_mocks(clf_pd, param_dict, proj_dict)

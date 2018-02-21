@@ -1587,9 +1587,9 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
     clf_ul_pd     = copy.deepcopy(clf_pd)
     coord_dict_ul = coord_dict.copy()
     # Coordinates
-    ra_min_ul  = 90. - coord_dict_ul['ra_range']
-    ra_max_ul  = 90.
-    ra_diff_ul = coord_dict_ul['ra_max_real'] - ra_max_ul
+    coord_dict_ul['ra_min']  = 90. - coord_dict_ul['ra_range']
+    coord_dict_ul['ra_max']  = 90.
+    coord_dict_ul['ra_diff'] = coord_dict_ul['ra_max_real'] - coord_dict_ul['ra_max']
     gap_ul     = 20.
     x_init_ul  = 10.
     y_init_ul  = param_dict['size_cube'] - coord_dict_ul['r_arr'][1] - 5.
@@ -1611,6 +1611,9 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
     clf_ur_pd     = copy.deepcopy(clf_pd)
     coord_dict_ur = copy.deepcopy(coord_dict_ul)
     # Coordinates
+    coord_dict_ur['ra_min' ] = 90. - coord_dict_ur['ra_range']
+    coord_dict_ur['ra_max' ] = 90.
+    coord_dict_ur['ra_diff'] = coord_dict_ur['ra_max_rea'] - coord_dict_ur['ra_max']
     x_init_ur = param_dict['size_cube'] - coord_dict_ur['r_arr'][1] - 5.
     y_init_ur = param_dict['size_cube'] - coord_dict_ur['r_arr'][1] - 10.
     z_init_ur = 10.
@@ -1628,8 +1631,8 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
     clf_ll_pd     = copy.deepcopy(clf_pd)
     coord_dict_ll = copy.deepcopy(coord_dict_ur)
     ## Changing geometry
-    coord_dict_ll['ra_min'] = 180.
-    coord_dict_ll['ra_max'] = 180. + coord_dict_ll['ra_range']
+    coord_dict_ll['ra_min' ] = 180.
+    coord_dict_ll['ra_max' ] = 180. + coord_dict_ll['ra_range']
     coord_dict_ll['ra_diff'] = coord_dict_ll['ra_max_real'] - coord_dict_ll['ra_max']
     assert( (coord_dict_ll['ra_min'] < coord_dict_ll['ra_max']) and 
             (coord_dict_ll['ra_min'] <= 360.) and
@@ -1652,8 +1655,8 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
     clf_lr_pd     = copy.deepcopy(clf_pd)
     coord_dict_lr = copy.deepcopy(coord_dict_ul)
     # Changing geometry
-    coord_dict_lr['ra_min'] = 270. - coord_dict_lr['ra_range']
-    coord_dict_lr['ra_max'] = 270.
+    coord_dict_lr['ra_min' ] = 270. - coord_dict_lr['ra_range']
+    coord_dict_lr['ra_max' ] = 270.
     coord_dict_lr['ra_diff'] = coord_dict_lr['ra_max_real'] - coord_dict_lr['ra_max']
     # New positions
     x_init_lr = coord_dict_lr['r_arr'][1]

@@ -2264,6 +2264,16 @@ def mockcatls_simbox_plot(param_dict, proj_dict, catl_ext='.hdf5',
     proj_dict: python dictionary
         dictionary with info of the project that uses the
         `Data Science` Cookiecutter template.
+
+    catl_ext: string, optional (default = '.hdf5')
+        file extension of the mock catalogues
+
+    fig_fmt: string, optional (default = 'pdf')
+        file format of the output figure
+        Options: `pdf`, or `png`
+
+    figsize: tuple, optional (default = (9,9))
+        figure size of the output figure, in units of inches
     """
     ## Constants and variables
     Prog_msg   = param_dict['Prog_msg' ]
@@ -2346,6 +2356,90 @@ def mockcatls_simbox_plot(param_dict, proj_dict, catl_ext='.hdf5',
             markersize=markersize, linestyle='None', rasterized=True)
         ax3.plot(y_kk_arr, z_kk_arr, marker='o', color=color_kk,
             markersize=markersize, linestyle='None', rasterized=True)
+    # Adjusting space
+    plt.subplots_adjust(top=0.86)
+    plt.tight_layout()
+    # Saving figure
+    if fig_fmt=='pdf':
+        plt.savefig(fname, bbox_inches='tight')
+    else:
+        plt.savefig(fname, bbox_inches='tight', dpi=400)
+    print('{0} Figure saved as: {1}'.format(Prog_msg, fname))
+    plt.clf()
+    plt.close()
+
+def mocks_lum_function(param_dict, proj_dict, catl_ext='.hdf5',
+    fig_fmt='pdf', figsize=(9,9)):
+    """
+    Computes the luminosity function of the mock catalogues
+
+    Parameters
+    ------------
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        dictionary with info of the project that uses the
+        `Data Science` Cookiecutter template.
+
+    catl_ext: string, optional (default = '.hdf5')
+        file extension of the mock catalogues
+
+    fig_fmt: string, optional (default = 'pdf')
+        file format of the output figure
+        Options: `pdf`, or `png`
+
+    figsize: tuple, optional (default = (9,9))
+        figure size of the output figure, in units of inches
+    """
+    matplotlib.rcParams['axes.linewidth'] = 2.5
+    ## Constants and variables
+    Prog_msg    = param_dict['Prog_msg' ]
+    plot_dict   = param_dict['plot_dict']
+    markersize  = plot_dict['markersize']
+    ## Separation for the `M_r` bins, in units of magnitudes
+    mr_bins_sep = 0.2
+    ## List of catalogues
+    catl_path_arr = cu.Index(proj_dict['mock_cat_mc'], catl_ext)
+    n_catls       = len(catl_path_arr)
+    ## Filename
+    fname = os.path.join(   proj_dict['fig_dir'],
+                            '{0}_{1}_lum_function_mocks.{2}'.format(
+                                param_dict['survey'],
+                                param_dict['halotype'],
+                                fig_fmt))
+    # Colormap
+    cm      = plt.get_cmap('gist_rainbow')
+    col_arr = [cm(ii/float(n_catls)) for ii in range(n_catls)]
+    ## Setting up figure
+    x_label = r'\boldmath $M_{r}$'
+    y_label = r'\boldmath $n(< M_{r}) \left[h^{3}\ \textrm{Mpc}^{-3}\right]$'
+    # Figure
+    plt.clf()
+    plt.close()
+    fig = plt.figure(figsize=figsize)
+    ax1 = fig.add_subplot(111, facecolor='white')
+    # Labels
+    ax1.set_xlabel(x_label, fontsize=plot_dict['size_label'])
+    ax1.set_ylabel(y_label, fontsize=plot_dict['size_label'])
+    ## Looping over mock catalogues
+    ## Looping over different catalogues
+    for kk, catl_kk in enumerate(tqdm(catl_path_arr)):
+        # Reading parameters
+        catl_kk_pd = cu.read_hdf5_file_to_pandas_DF(catl_kk)
+        # Color
+        color_kk = col_arr[kk]
+        ## Calculating luminosity function
+        mr_bins = cu.Bins_array_create(catl_kk_pd['M_r'], base=mr_bins_sep)
+        N_lum   = [num.where(catl_kk_pd['M_r'] < xx)[0].size+1 for xx in mr_bins]
+        n_lum   = num.asarray(N_lum)/param_dict['survey_vol']
+        ## Plotting
+        ax1.plot(mr_bins, n_lum, color=color_kk, marker='o', linestyle='-',
+            markersize=markersize)
+    # Log-axis
+    ax1.set_yscale('log')
+    # Reverse axis
+    ax1.invert_xaxis()
     # Adjusting space
     plt.subplots_adjust(top=0.86)
     plt.tight_layout()
@@ -2455,6 +2549,8 @@ def main(args):
         eco_geometry_mocks(clf_pd, param_dict, proj_dict)
     ## Plotting different catalogues in simulation box
     mockcatls_simbox_plot(param_dict, proj_dict)
+    ## Luminosity function for each catalogue
+    mocks_lum_function(param_dict, proj_dict)
 
 # Main function
 if __name__=='__main__':

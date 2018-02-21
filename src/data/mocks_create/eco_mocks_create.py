@@ -51,6 +51,7 @@ from astropy.io import fits
 import copy
 from multiprocessing import Pool, Process, cpu_count
 from scipy.interpolate import interp1d
+import tarfile
 
 
 ## Functions
@@ -314,6 +315,11 @@ def add_to_dict(param_dict):
     # FoF linking lengths
     l_perp = 0.14
     l_para = 0.75
+    ## Survey name
+    if param_dict['survey'] == 'ECO':
+        survey_name = 'ECO'
+    else:
+        survey_name = 'RESOLVE_{0}'.format(param_dict['survey'])
     ##
     ## Adding to `param_dict`
     param_dict['cens'         ] = cens
@@ -325,6 +331,7 @@ def add_to_dict(param_dict):
     param_dict['const_dict'   ] = const_dict
     param_dict['l_perp'       ] = l_perp
     param_dict['l_para'       ] = l_para
+    param_dict['survey_name'  ] = survey_name
 
     return param_dict
 
@@ -387,6 +394,12 @@ def directory_skeleton(param_dict, proj_dict):
     fig_dir     = os.path.join( proj_dict['plot_dir'],
                                 param_dict['halotype'],
                                 param_dict['survey'])
+    ## TAR folder
+    tar_dir     = os.path.join( proj_dict['data_dir'],
+                                'processed',
+                                'TAR_files',
+                                param_dict['halotype'],
+                                param_dict['survey'])
     ## Creating output folders for the catalogues
     mock_cat_mgc     = os.path.join(catl_outdir, 'galaxy_catalogues')
     mock_cat_mc      = os.path.join(catl_outdir, 'member_galaxy_catalogues')
@@ -410,6 +423,7 @@ def directory_skeleton(param_dict, proj_dict):
     cu.Path_Folder(hb_files_dir)
     cu.Path_Folder(phot_dir)
     cu.Path_Folder(fig_dir)
+    cu.Path_Folder(tar_dir)
     ##
     ## Adding to `proj_dict`
     proj_dict['cosmo_dir'       ] = cosmo_dir
@@ -427,6 +441,7 @@ def directory_skeleton(param_dict, proj_dict):
     proj_dict['hb_files_dir'    ] = hb_files_dir
     proj_dict['phot_dir'        ] = phot_dir
     proj_dict['fig_dir'         ] = fig_dir
+    proj_dict['tar_dir'         ] = tar_dir
 
     return proj_dict
 
@@ -790,6 +805,47 @@ def z_comoving_calc(param_dict, proj_dict,
         print('{0} Comoving Distance Table Calc .... Done'.format(Prog_msg))
 
     return param_dict
+
+def tarball_create(param_dict, proj_dict, catl_ext='hdf5'):
+    """
+    Creates TAR object with mock catalogues, figures and README file
+
+    Parameters
+    -----------
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        dictionary with info of the project that uses the
+        `Data Science` Cookiecutter template.
+
+    catl_ext: string, optional (default = 'hdf5')
+        file extension of the `mock` catalogues created.
+
+    """
+    Prog_msg   = param_dict['Prog_msg' ]
+    ## List of Mock catalogues
+    catl_path_arr = cu.Index(proj_dict['mock_cat_mc'], catl_ext)
+    ## README file
+    readme_file   = os.path.join(   proj_dict['base_dir'],
+                                    'references',
+                                    'ECO_RESOLVE_Mocks',
+                                    'README.pdf')
+    cu.File_Exists(readme_file)
+    ## Saving to TAR file
+    tar_file_path = os.path.join(   proj_dict['tar_dir'],
+                                    '{0}_{1}_catls.tar.gz'.format(
+                                        param_dict['survey_name'],
+                                        param_dict['halotype']))
+    # Opening file
+    with tarfile.open(tar_file_path, mode='w:gz') as tf:
+        tf.add(readme_file, arcname=os.path.basename(readme_file))
+        for file_kk in catl_path_arr:
+            tf.add(file_kk, arcname=os.path.basename(file_kk))
+    tf.close()
+    cu.File_Exists(tar_file_path)
+    if param_dict['verbose']:
+        print('{0} TAR file saved as: {1}'.format(Prog_msg, tar_file_path))
 
 ## -----------| Halobias-related functions |----------- ##
 
@@ -2551,6 +2607,9 @@ def main(args):
     mockcatls_simbox_plot(param_dict, proj_dict)
     ## Luminosity function for each catalogue
     mocks_lum_function(param_dict, proj_dict)
+    ##
+    ## Saving everything to TARBALL
+    tarball_create(param_dict, proj_dict)
 
 # Main function
 if __name__=='__main__':

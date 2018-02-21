@@ -757,6 +757,10 @@ def z_comoving_calc(param_dict, proj_dict,
         updated dictionary with `project` variables + `z_como_pd`, which 
         is the DataFrame with `z, d_comoving` in units of Mpc
     """
+    ## Constants
+    Prog_msg = param_dict['Prog_msg']
+    if param_dict['verbose']:
+        print('{0} Comoving Distance Table Calc ....'.format(Prog_msg))
     ## Cosmological model
     cosmo_model = param_dict['cosmo_model']
     ## File
@@ -782,6 +786,8 @@ def z_comoving_calc(param_dict, proj_dict,
         z_como_pd = pd.read_csv(z_comoving_file, sep=sep)
     ## Saving to `param_dict`
     param_dict['z_como_pd'] = z_como_pd
+    if param_dict['verbose']:
+        print('{0} Comoving Distance Table Calc .... Done'.format(Prog_msg))
 
     return param_dict
 

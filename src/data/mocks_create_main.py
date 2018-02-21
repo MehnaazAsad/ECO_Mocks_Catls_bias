@@ -302,7 +302,7 @@ def file_construction_and_execution(params_pd_data, param_dict):
         out_f.write(b"""### --- Variables\n""")
         out_f.write(b"""ENV_NAME="eco_mocks_catls"\n""")
         out_f.write( """WINDOW_NAME="ECO_RESOLVE_Mocks_create"\n""".encode())
-        out_f.write( """WINDOW_CATL="data_{0}"\n""".format(param_dict['catl_type']).encode())
+        out_f.write( """WINDOW_CATL="data_{0}_{1}"\n""".format(param_dict['catl_type'], param_dict['cosmo_choice']).encode())
         out_f.write(b"""# Home Directory\n""")
         out_f.write(b"""home_dir=`eval echo "~$different_user"`\n""")
         out_f.write(b"""# Type of OS\n""")

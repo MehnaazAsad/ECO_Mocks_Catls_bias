@@ -18,6 +18,7 @@ MOCKS_CATL_DIR = $(DATA_DIR)/processed/*
 # CPU-Fraction
 CPU_FRAC = 0.75
 REMOVE_FILES = "True"
+COSMO_CHOICE="Planck"
 
 ifeq (,$(shell which conda))
 HAS_CONDA=False
@@ -69,7 +70,7 @@ endif
 
 ## Create catalogues for `ECO`
 catl_mr_make:
-	@python $(SRC_DIR)/mocks_create_main.py -abopt mr -cpu $(CPU_FRAC) -remove $(REMOVE_FILES)
+	@python $(SRC_DIR)/mocks_create_main.py -abopt mr -cpu $(CPU_FRAC) -remove $(REMOVE_FILES) -cosmo $(COSMO_CHOICE)
 
 ## Delete existing `mock` catalogues
 delete_mock_catls:

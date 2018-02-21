@@ -5,6 +5,9 @@ Repository for creating ECO synthetic catalogues
 
 **Author**: Victor Calderon ([victor.calderon@vanderbilt.edu](mailto:victor.calderon@vanderbilt.edu))
 
+[![Documentation Status](https://readthedocs.org/projects/eco-mocks-catls/badge/?version=latest)](http://eco-mocks-catls.readthedocs.io/en/latest/?badge=latest)
+
+
 ## Installing Environment & Dependencies
 
 To use the scripts in this repository, you must have _Anaconda_ installed on the systems that will be running the scripts. This will simplify the process of installing all the dependencies.

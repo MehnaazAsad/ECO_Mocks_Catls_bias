@@ -216,6 +216,9 @@ def get_analysis_params(param_dict):
     ##
     ## Cosmological model
     params_pd_data.loc[params_pd_data['Name']=='cosmo_choice','Value'] = param_dict['cosmo_choice']
+    ##
+    ## Halo definition
+    params_pd_data.loc[params_pd_data['Name']=='halotype','Value'] = param_dict['halotype']
 
     return params_pd_data
 
@@ -301,7 +304,7 @@ def file_construction_and_execution(params_pd_data, param_dict):
         out_f.write( """## Last Edited: {0}\n\n""".format(now_str).encode())
         out_f.write(b"""### --- Variables\n""")
         out_f.write(b"""ENV_NAME="eco_mocks_catls"\n""")
-        out_f.write( """WINDOW_NAME="ECO_RESOLVE_Mocks_create"\n""".encode())
+        out_f.write( """WINDOW_NAME="ECO_RESOLVE_Mocks_create_{0}"\n""".format(param_dict['halotype']).encode())
         out_f.write( """WINDOW_CATL="data_{0}_{1}"\n""".format(param_dict['catl_type'], param_dict['cosmo_choice']).encode())
         out_f.write(b"""# Home Directory\n""")
         out_f.write(b"""home_dir=`eval echo "~$different_user"`\n""")

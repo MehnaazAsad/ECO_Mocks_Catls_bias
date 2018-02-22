@@ -132,6 +132,11 @@ Each mock catalogues contains information about the **galaxy**,
 **group galaxy**, **host halo**, and more. We will denote 
 \*dark matter* as *DM*.
 
+.. note::
+
+    The descriptions for the variables are somewhat long, so don't forget 
+    to scroll to the **right** to see *more*.
+
 .. properties_description_main_catl::
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 *Main* Galaxy Properties
@@ -263,19 +268,4 @@ The catalogue can be found at
     * - :code:`Fil. Quality`
       - Quality of the filament, i.e. probability that the filament is *real*
       - 
-
-
-This is for testing
-
-.. csv-table:: Frozen Delights!
-    :header: "Treat", "Quantity", "Description"
-    :widths: 15, 10, 30
-
-    "Albatross", 2.99, "On a stick!"
-    | "Crunchy Frog", 1.49, "If we took the bones out, it wouldn't be
-    | crunchy, now would it?If we took the bones out, it wouldn't be
-    | crunchy, now would it?If we took the bones out, it wouldn't be
-    | crunchy, now would it?"
-    "Gannet Ripple", 1.99, "On a stick!"
-
 

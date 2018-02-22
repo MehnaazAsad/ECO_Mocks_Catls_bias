@@ -51,11 +51,42 @@ region along the `cz` (velocity) direction in redshift-space.
 +----------+-----------------+----------+-------------+-----------+--------+---------+-------------+------------+-------------+
 | Survey   | RA (deg)        | RA range | DEC (deg)   | DEC range | zmin   | zmax    | Vmin (km/s) | Vmax (km/s)| Dist (Mpc)  |
 +==========+=================+==========+=============+===========+========+=========+=============+============+=============+
-| A        | (131.25, 236.25)| 105.0    |(0  ,+5)     | 5         | 0.00844| 0.0249  | 2532        | 7470.      |(25.32,70.02)|
+| A        | (131.25, 236.25)| 105.0    |(0  ,+5)     | 5         | 0.00844| 0.0249  | 2532        |  7470.     |(25.32,70.02)|
 +----------+-----------------+----------+-------------+-----------+--------+---------+-------------+------------+-------------+
-| B        | (330.0 , 45.0  )| 75.0     |(-1.25,+1.25)| 2.5       | 0.01416| 0.024166| 4250        | 7250.      |(42.5 , 72.5)|
+| B        | (330.0 , 45.0  )| 75.0     |(-1.25,+1.25)| 2.5       | 0.01416| 0.024166| 4250        |  7250.     |(42.5 , 72.5)|
 +----------+-----------------+----------+-------------+-----------+--------+---------+-------------+------------+-------------+
 | ECO      | (130.05, 237.45)| 107.4    |(-1, +49.85) | 50.85     | 0.00844| 0.0249  | 2532        | 7470.      |(25.32,70.02)|
 +----------+-----------------+----------+-------------+-----------+--------+---------+-------------+------------+-------------+
 
+The next table provides the number of synthetic catalogues per cubic box of **L = 180 Mpc/h**, where *h* = 1.
+
++--------+--------------+
+| Survey | Number Mocks |
++========+==============+
+| A      | 59           |
++--------+--------------+
+| B      | 104          |
++--------+--------------+
+| ECO    | 8            |
++--------+--------------+
+
+.. _mock_distribution_box:
+-----------------------------------------------
+Distribution of catalogues in simulation box
+-----------------------------------------------
+
+In order to maximize the number of catalogues per simulation, we 
+have to fit as many catalogues as we can, while keeping a 
+distance of ~10 Mpc/h between catalogues. We chose this distance of 
+10 Mpc/h in order to avoid using the same galaxy for different 
+catalogues, and also to make the catalogues as independent from each 
+other as possible.
+
+.. |ECO_distr| image:: ../images/ECO_mvir_xyz_mocks.png
+    :align: center
+    :alt: Distribution of mock catalogues within simulation box
+    :scale: 50 %
+
+Figure |ECO_distr|_ shows how the catalogues for ECO surveys are organized 
+within the simulation box used for this analysis.
 

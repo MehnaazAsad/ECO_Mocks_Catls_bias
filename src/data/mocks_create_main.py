@@ -114,7 +114,7 @@ def get_parser():
                         dest='halotype',
                         help='Type of halo definition.',
                         type=str,
-                        choices=['mvir','m200'],
+                        choices=['mvir','m200b'],
                         default='mvir')
     # Cosmology used for the project
     parser.add_argument('-cosmo',

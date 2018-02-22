@@ -213,7 +213,12 @@ Each mock catalogues contains information about the **galaxy**,
     * - :code:`halo_rvir`
       - Virial radius of the DM halo, to which the galaxy belongs.
       - Mpc/h with *h* = 1.
-        
+    * - :code:`M_group`
+      - Abundance matched mass of the galaxy group. This was calculated by assuming a monotonic relation between DM halo mass :code:`logM_halo` and the group *total* luminosity. For RESOLVE-B, we used a modified version of the *ECO* group luminosity function.
+      - Msun/h with *h* = 1
+    * - :code:`g_galtype`
+      - Type of galaxy. **Group central** = 1, **Group satellite** = 0
+      - None        
 
 .. note::
 

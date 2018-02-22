@@ -189,18 +189,12 @@ After having downloaded your file, you can read them in the following way:
     if __name__=='__main__':
         main()
 
-
 .. properties_description::
 ------------------------------------------------
 Description of the *fields* in the catalogues
 ------------------------------------------------
 
 
-
-
-
-
-
-
-
+Each mock catalogues contains information about the **galaxy**, 
+**group galaxy**, **host halo**, and more.
 

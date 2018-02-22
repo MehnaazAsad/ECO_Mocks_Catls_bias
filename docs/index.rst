@@ -18,11 +18,3 @@ Contents:
 
    mock_catalogues/mock_catalogues
 
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

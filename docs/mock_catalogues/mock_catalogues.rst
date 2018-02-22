@@ -197,7 +197,23 @@ Each mock catalogues contains information about the **galaxy**,
       - (1/Gyr)
     * - :code:`survey_flag`
       - Survey name, from which the properties of the **real** matched galaxy were extracted.
-      - None        
+      - None
+    * - :code:`u_r`
+      - Color of the matched galaxy, i.e. (:code:`umag` - :code:`rmag`)
+      - magnitudes
+    * - :code:`mhi`
+      - HI mass in galaxy. Used the *predicted* HI massed (matched to the ECO file, i.e. :code:`eco_wresa_050815.dat`) and the key '*MHI*' (RESOLVE). To compute MHI masses using *ECO*, we used the formula: 10^(:code:`MHI` + :code:`logmstar`)
+      - Msun
+    * - :code:`groupid`
+      - Group ID, to which the galaxy belongs after running *Berlind2006* FoF group finder.
+      - None
+    * - :code:`g_ngal`
+      - Number of galaxies in a group of galaxies
+      - None
+    * - :code:`halo_rvir`
+      - Virial radius of the DM halo, to which the galaxy belongs.
+      - Mpc/h with *h* = 1.
+        
 
 .. note::
 

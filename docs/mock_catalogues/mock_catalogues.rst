@@ -202,7 +202,7 @@ Each mock catalogues contains information about the **galaxy**,
       - Color of the matched galaxy, i.e. (:code:`umag` - :code:`rmag`)
       - magnitudes
     * - :code:`mhi`
-      - HI mass in galaxy. Used the *predicted* HI massed (matched to the ECO file, i.e. :code:`eco_wresa_050815.dat`) and the key '*MHI*' (RESOLVE). To compute MHI masses using *ECO*, we used the formula: 10^(:code:`MHI` + :code:`logmstar`)
+      - HI mass in galaxy. Used the *predicted* HI massed (matched to the ECO file, i.e. :code:`eco_wresa_050815.dat`) and the key "*MHI*" (RESOLVE). To compute MHI masses using *ECO*, we used the formula: 10^(:code:`MHI` + :code:`logmstar`)
       - Msun
     * - :code:`groupid`
       - Group ID, to which the galaxy belongs after running *Berlind2006* FoF group finder.
@@ -218,7 +218,14 @@ Each mock catalogues contains information about the **galaxy**,
       - Msun/h with *h* = 1
     * - :code:`g_galtype`
       - Type of galaxy. **Group central** = 1, **Group satellite** = 0
-      - None        
+      - None
+        
+.. csv-table:: CSV Table
+    :header: "Treat", "Quantity", "Description"
+    :widths: 15, 10, 30
+
+    "Albatross", 2.99, "On a stick!"
+
 
 .. note::
 

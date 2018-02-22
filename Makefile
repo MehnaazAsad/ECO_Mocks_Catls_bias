@@ -1,5 +1,6 @@
-.PHONY: clean data lint requirements sync_data_to_s3 sync_data_from_s3 
-	environment update_environment remove_environment
+.PHONY: clean lint test_environment environment update_environment 
+	remove_environment catl_mr_make delete_mock_catls delete_all_but_raw
+	clean_data_dir test_files delete_catl_screens
 
 #################################################################################
 # GLOBALS                                                                       #
@@ -96,9 +97,8 @@ test_files:
 
 ## Delete screens from creating catalogues
 delete_catl_screens:
-	screen -S "SDSS_Mocks_create" -X quit
-	screen -S "SDSS_Data_create" -X quit
-	screen -S "SDSS_Data_Mocks_create" -X quit
+	screen -S "ECO_RESOLVE_Mocks_create_m200b" -X quit
+	screen -S "ECO_RESOLVE_Mocks_create_mvir" -X quit
 
 
 #################################################################################

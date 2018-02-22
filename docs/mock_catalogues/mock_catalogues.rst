@@ -181,7 +181,7 @@ After having downloaded your file, you can read them in the following way:
 
     def main():
         # Specifying filename
-        filename = 'Mr19_4006_HaloBias_cat_1_memb_cat.hdf5'
+        filename = 'ECO_catl_1.hdf5'
         # Reading in ECO/RESOLVE catalogue
         mock_pd = reading_catls(filename)
 

@@ -98,9 +98,9 @@ The set of linking lengths used for this analyses are
     :widths: 25 75
     :header-rows: 1
 
-    * - :math:`l_perp`
-      - 0.14
-    * - :math:`l_para`
+    * - l_perp
+      - l_para
+    * - 0.14
       - 0.75
 
 .. _mock_distribution_box:

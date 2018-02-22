@@ -218,6 +218,7 @@ Each mock catalogues contains information about the **galaxy**,
       - Msun/h with *h* = 1
     * - :code:`g_galtype`
       - Type of galaxy. **Group central** = 1, **Group satellite** = 0
+      - None
 
 .. note::
 

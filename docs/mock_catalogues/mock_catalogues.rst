@@ -132,6 +132,11 @@ Each mock catalogues contains information about the **galaxy**,
 **group galaxy**, **host halo**, and more. We will denote 
 \*dark matter* as *DM*.
 
+.. properties_description_main_catl::
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+*Main* Galaxy Properties
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 .. list-table:: List of Parameters
     :widths: 25 60 15
     :header-rows: 1
@@ -229,8 +234,37 @@ Each mock catalogues contains information about the **galaxy**,
     The relationship between velocities (:code:`cz`'s') is the following:
     :math:`(:code:`cz` - :code:`cz_nodist`)^2 + (vel_tan)^2 = (vel_tot)^2`.
 
+.. properties_description_main_catl::
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Halos Filaments
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+**Author**: Roberto Gonzales [`regonzar@astro.puc.cl <mailto:regonzar@astro.puc.cl>`_ or `regonzar@oddjob.uchicago.edu <mailto:regonzar@oddjob.uchicago.edu>`_]
 
+**Affiliation**: The University of Chicago, Universidad Católica de Chile
+
+.. list-table:: List of Parameters - Halo Filaments
+    :widths: 25 60 15
+    :header-rows: 1
+
+    * - Field
+      - Description
+      - Units
+    * - :code:`Halo ID`
+      - Halo ID number for the given DM halo in the simulation box.
+      - 
+    * - :code:`log(MHalo)`
+      - Logarithmic value of the DM halo's mass, as :math:`log(MHalo)`
+      - log(Msun/h) with *h* = 1
+    * - :code:`ID/Type`
+      - ID of the DM halo's environment. '0': Not in a filament; '1': filament node; '2': part of a filament skeleton; '3': within a clode radius of a filament.
+      - 
+    * - :code:`Fil`
+      - ID of the halo's filament. (-1 if not in a filament)
+      - 
+    * - :code:`Fil. Quality`
+      - Quality of the filament, i.e. probability that the filament is *real*
+      - 
 
 
 

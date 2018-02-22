@@ -156,6 +156,16 @@ Each mock catalogues contains information about the **galaxy**,
     * - :code:`M_r`
       - r-band absolute magnitude of the galaxy
       - magnitudes
+    * - :code:`haloid`
+      - Dark matter halo ID, as taking from the simulation
+      - None
+    * - :code:`loghalom`
+      - logarithmic value of the DM's mass
+      - log(Msun/h) where h=1
+    * - :code:`halo_ngal`
+      - Total number of galaxies in DM halo. Number of galaxies in the mock may differ from this value
+      - None
+        
 
 .. note::
 

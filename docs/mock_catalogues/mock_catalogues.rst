@@ -8,6 +8,10 @@ Mock Catalogues
 This is a brief overview of the different aspects of the synthetic 
 catalogues produced for ECO RESOLVE-A and RESOLVE-B surveys
 
+For a **more** comprehensive discussion on how the synthetic mocks 
+were created, you can read the 
+'ECO and Resolve Synthetic Catalogue <https://cdn.rawgit.com/vcalderon2009/ECO_Mocks_Catls/f127869f/references/ECO_RESOLVE_Mocks/ECO_mocks.pdf>' guide.
+
 .. contents:: Table of Contents
     :local:
 

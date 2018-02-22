@@ -182,6 +182,21 @@ Each mock catalogues contains information about the **galaxy**,
       - km/s
     * - :code:`morph`
       - Galaxy's morphology. 'LT': *Late Type*; 'ET': *Early type*. Used either *goodmorph* (ECO) or *MORPH* (RESOLVE) keys. '-9999' if no matched galaxy
+      - None
+    * - :code:`logmstar`
+      - Log value of galaxy's stellar mass. Used either '*rpgoodmstarsnew*' (ECO) or '*MSTARS*' (RESOLVE) keys in the files
+      - log(Msun)
+    * - :code:`rmag`
+      - r-band *apparent* magnitude. Used either 'rpsmoothrestrmagnew' (ECO) or '*SMOOTHRESTRMAG*' (RESOLVE) keys in the files.
+      - magnitudes
+    * - :code:`umag`
+      - u-band *apparent* magnitude. Used either 'rpsmoothrestumagnew' (ECO) or '*SMOOTHRESTUMAG*' (RESOLVE) keys in the files.
+      - magnitudes
+    * - :code:`fsmgr`
+      - Stellar mass produced over last Gyr divided by pre-existing stellar mass from new model set. Used '*rpmeanssfr*' (ECO) or '*MODELFSMGR*' (RESOLVE) keys.
+      - (1/Gyr)
+    * - :code:`survey_flag`
+      - Survey name, from which the properties of the **real** matched galaxy were extracted.
       - None        
 
 .. note::

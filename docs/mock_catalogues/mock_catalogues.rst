@@ -95,7 +95,7 @@ into galaxy groups, we have to choose a set of **linking lengths**.
 The set of linking lengths used for this analyses are
 
 .. list-table:: FoF Group-finding parameters
-    :widths: 25 75
+    :widths: 25 25
     :header-rows: 1
 
     * - l_perp

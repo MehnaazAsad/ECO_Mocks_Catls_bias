@@ -128,7 +128,7 @@ Description of the *fields* in the catalogues
 Each mock catalogues contains information about the **galaxy**, 
 **group galaxy**, **host halo**, and more.
 
-.. list-table:: Title
+.. list-table:: List of Parameters
     :widths: 25 75
     :header-rows: 1
 

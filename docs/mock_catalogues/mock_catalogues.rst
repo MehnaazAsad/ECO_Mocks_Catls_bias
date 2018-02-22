@@ -118,7 +118,6 @@ After having downloaded your file, you can read them in the following way:
 
 .. literalinclude:: ../example_scripts/read_ECO_RESOLVE_catls.py
 
-If you prefer, you can download this file from `here <../example_scripts/read_ECO_RESOLVE_catls.py>`_
 
 .. properties_description::
 ------------------------------------------------

@@ -242,7 +242,7 @@ The catalogue can be found at
 `<http://lss.phy.vanderbilt.edu/groups/data_eco_vc/Halo_Filaments/>`_.
 
 .. list-table:: List of Parameters - Halo Filaments
-    :widths: 15 40 15
+    :widths: 15 20 15
     :header-rows: 1
 
     * - Field
@@ -263,4 +263,17 @@ The catalogue can be found at
     * - :code:`Fil. Quality`
       - Quality of the filament, i.e. probability that the filament is *real*
       - 
+
+
+This is for testing
+
+.. csv-table:: Frozen Delights!
+    :header: "Treat", "Quantity", "Description"
+    :widths: 15, 10, 30
+
+    "Albatross", 2.99, "On a stick!"
+    "Crunchy Frog", 1.49, "If we took the bones out, it wouldn't be
+    crunchy, now would it?"
+    "Gannet Ripple", 1.99, "On a stick!"
+
 

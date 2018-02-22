@@ -235,6 +235,12 @@ Halos Filaments
 
 **Affiliation**: The University of Chicago, Universidad Católica de Chile
 
+This file includes data about the filaments found in the simulation box
+used for these synthetic catalogues.
+
+The catalogue can be found at 
+`<http://lss.phy.vanderbilt.edu/groups/data_eco_vc/Halo_Filaments/>`_.
+
 .. list-table:: List of Parameters - Halo Filaments
     :widths: 15 40 15
     :header-rows: 1
@@ -257,25 +263,4 @@ Halos Filaments
     * - :code:`Fil. Quality`
       - Quality of the filament, i.e. probability that the filament is *real*
       - 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

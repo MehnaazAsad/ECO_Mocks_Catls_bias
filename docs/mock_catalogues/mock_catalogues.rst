@@ -137,7 +137,9 @@ Each mock catalogues contains information about the **galaxy**,
       - Units
     * - :code:`ra`
       - Right Ascension of the galaxy
+      - 
     * - :code:``
+      - 
       - 
     * - :code:``
       - 

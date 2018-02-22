@@ -314,6 +314,8 @@ def add_to_dict(param_dict):
         survey_name = 'ECO'
     else:
         survey_name = 'RESOLVE_{0}'.format(param_dict['survey'])
+    ## README url
+    readme_url = 'https://goo.gl/Xo317R'
     ##
     ## Adding to `param_dict`
     param_dict['cens'         ] = cens
@@ -326,6 +328,7 @@ def add_to_dict(param_dict):
     param_dict['l_perp'       ] = l_perp
     param_dict['l_para'       ] = l_para
     param_dict['survey_name'  ] = survey_name
+    param_dict['readme_url'   ] = readme_url
 
     return param_dict
 
@@ -827,10 +830,11 @@ def tarball_create(param_dict, proj_dict, catl_ext='hdf5'):
     ## List of Mock catalogues
     catl_path_arr = cu.Index(proj_dict['mock_cat_mc'], catl_ext)
     ## README file
+    # Downloading working README file
     readme_file   = os.path.join(   proj_dict['base_dir'],
                                     'references',
-                                    'ECO_RESOLVE_Mocks',
-                                    'README.pdf')
+                                    'README_RTD.pdf')
+    cu.File_Download_needed(readme_file, param_dict['readme_url'])
     cu.File_Exists(readme_file)
     ## Saving to TAR file
     tar_file_path = os.path.join(   proj_dict['tar_dir'],

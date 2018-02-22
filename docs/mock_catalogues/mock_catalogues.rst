@@ -165,7 +165,24 @@ Each mock catalogues contains information about the **galaxy**,
     * - :code:`halo_ngal`
       - Total number of galaxies in DM halo. Number of galaxies in the mock may differ from this value
       - None
-        
+    * - :code:`cs_flag`
+      - Type of galaxy. **Halo central** = 1, **Halo satellite** = 0
+      - None
+    * - :code:`cz_nodist`
+      - Velocity of the galaxy (*without* redshift-space distortions)
+      - km/s
+    * - :code:`dist_c`
+      - *Real* distance between halo's central galaxy and the galaxy.
+      - Mpc/h with h=1
+    * - :code:`vel_tot`
+      - Total velu for **peculiar** velocity
+      - km/s
+    * - :code:`vel_tan`
+      - Tangential component of the peculiar velocity
+      - km/s
+    * - :code:`morph`
+      - Galaxy's morphology. 'LT': *Late Type*; 'ET': *Early type*. Used either *goodmorph* (ECO) or *MORPH* (RESOLVE) keys. '-9999' if no matched galaxy
+      - None        
 
 .. note::
 

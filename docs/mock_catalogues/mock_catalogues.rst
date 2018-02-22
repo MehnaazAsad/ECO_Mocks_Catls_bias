@@ -129,13 +129,108 @@ Each mock catalogues contains information about the **galaxy**,
 **group galaxy**, **host halo**, and more.
 
 .. list-table:: List of Parameters
-    :widths: 25 75
+    :widths: 25 60 15
     :header-rows: 1
 
     * - Field
       - Description
+      - Units
     * - :code:`ra`
-      - Right Ascension in *degrees*
+      - Right Ascension of the galaxy
+    * - :code:``
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+    * - :code:``
+      - 
+      - 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

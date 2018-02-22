@@ -59,7 +59,7 @@ $:  make show-help
 To make it easier to activate the necessary environment, one can check out [*conda-auto-env*](https://github.com/chdoig/conda-auto-env), which activates the necessary environment automatically.
 
 
-This is a summary of teh values used to create these mock catalogues:
+This is a summary of the values used to create these mock catalogues:
 These catalogues are taking into account the extra buffer along the _cz_ direction in redshift space.
 
 |  Survey  | RA (Deg)       | RA Range | DEC (Deg)   | DEC Range | *zmin* | *zmax*  | Vmin (km/s) | Vmax (km/s)| Dist (Mpc)  |

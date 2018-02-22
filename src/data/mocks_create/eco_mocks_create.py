@@ -845,7 +845,18 @@ def tarball_create(param_dict, proj_dict, catl_ext='hdf5'):
     with tarfile.open(tar_file_path, mode='w:gz') as tf:
         tf.add(readme_file, arcname=os.path.basename(readme_file))
         for file_kk in catl_path_arr:
+            ## Reading in DataFrame
+            gal_pd_kk = cu.read_hdf5_file_to_pandas_DF(file_kk)
+            ## DataFrame `without` certain columns
+            gal_pd_mod = catl_drop_cols(gal_pd_kk)
+            ## Saving modified DataFrame to file
+            file_mod_kk = file_kk+'.mod'
+            cu.pandas_df_to_hdf5_file(gal_pd_mod, file_mod_kk)
+            cu.File_Exists(file_mod_kk)
+            # Saving to Tar-file
             tf.add(file_kk, arcname=os.path.basename(file_kk))
+            # Deleting extra file
+            os.remove(file_mod_kk)
     tf.close()
     cu.File_Exists(tar_file_path)
     if param_dict['verbose']:
@@ -2127,9 +2138,9 @@ def group_mass_assignment(mockgal_pd, mockgroup_pd, param_dict, proj_dict):
 
     return mockgal_pd_new, mockgroup_pd_new
 
-def catl_drop_cols(mockgal_pd, mockgroup_pd, param_dict):
+def catl_drop_cols(mockgal_pd):
     """
-    Drops certain columns from both DataFrames
+    Drops certain columns from the galaxy DataFrame
 
     Parameters
     -----------
@@ -2137,26 +2148,22 @@ def catl_drop_cols(mockgal_pd, mockgroup_pd, param_dict):
         DataFrame containing information for each mock galaxy.
         Includes galaxy properties + group ID
 
-    mockgroup_pd: pandas DataFrame
-        DataFame containing information for each galaxy group
-
-    param_dict: python dictionary
-        dictionary with `project` variables
-
     Returns
     -----------
-    mockgal_pd: pandas DataFrame
+    gal_pd_mod: pandas DataFrame
         Updated version of the DataFrame containing information for each 
         mock galaxy.
 
-    mockgroup_pd: pandas DataFrame
-        Updated DataFame containing information for each galaxy group
     """
     ## Copies of DataFrames
     gal_pd   = mockgal_pd.copy()
-    group_pd = mockgroup_pd.copy()
     ## Columns
-    # gal_cols = 
+    gal_cols = ['x','y','z','vx','vy','vz','galid','x_orig','y_orig','z_orig',
+                'idx','vel_pec']
+    # New object `without` these columns
+    gal_pd_mod = gal_pd.loc[:,~gal_pd.columns.isin(gal_cols)].copy()
+
+    return gal_pd_mod
 
 ## ---------| Halo Rvir calculation |------------##
 

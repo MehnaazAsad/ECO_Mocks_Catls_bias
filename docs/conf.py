@@ -185,7 +185,7 @@ latex_elements = {
 latex_documents = [
     ('index',
      'ECO_Mocks_Catls.tex',
-     u'ECO_Mocks_Catls Documentation',
+     u'ECO Mocks Catls Documentation',
      u"Victor Calderon", 'manual'),
 ]
 

@@ -163,8 +163,7 @@ Each mock catalogues contains information about the **galaxy**,
       - logarithmic value of the DM's mass
       - log(Msun/h) where h=1
     * - :code:`halo_ngal`
-      - Total number of galaxies in DM halo. Number of galaxies in the 
-        mock may differ from this value
+      - Total number of galaxies in DM halo. Number of galaxies in the mock may differ from this value
       - None
     * - :code:`cs_flag`
       - Type of galaxy. **Halo central** = 1, **Halo satellite** = 0
@@ -194,12 +193,10 @@ Each mock catalogues contains information about the **galaxy**,
       - u-band *apparent* magnitude. Used either 'rpsmoothrestumagnew' (ECO) or '*SMOOTHRESTUMAG*' (RESOLVE) keys in the files.
       - magnitudes
     * - :code:`fsmgr`
-      - Stellar mass produced over last Gyr divided by pre-existing stellar mass from new model set. Used '*rpmeanssfr*' (ECO) or '*MODELFSMGR*' 
-        (RESOLVE) keys.
+      - Stellar mass produced over last Gyr divided by pre-existing stellar mass from new model set. Used '*rpmeanssfr*' (ECO) or '*MODELFSMGR*' (RESOLVE) keys.
       - (1/Gyr)
     * - :code:`survey_flag`
-      - Survey name, from which the properties of the **real** matched galaxy 
-        were extracted.
+      - Survey name, from which the properties of the **real** matched galaxy were extracted.
       - None
     * - :code:`u_r`
       - Color of the matched galaxy, i.e. (:code:`umag` - :code:`rmag`)
@@ -225,7 +222,7 @@ Each mock catalogues contains information about the **galaxy**,
 .. note::
 
     The relationship between velocities (:code:`cz`'s') is the following:
-    (:code:`cz` - :code:`cz_nodist`)^2 + (vel_tan)^2 = (vel_tot)^2.
+    (:code:`cz` - :code:`cz_nodist`)^2 + (:code:`vel_tan`)^2 = (:code:`vel_tot`)^2.
 
 .. properties_description_main_catl::
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

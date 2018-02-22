@@ -90,6 +90,19 @@ The next table provides the number of synthetic catalogues per cubic box of **L 
 | ECO    | 8            |
 +--------+--------------+
 
+In order to run the *Friends-of-Friends* (FoF) algorithm and put galaxies 
+into galaxy groups, we have to choose a set of **linking lengths**.
+The set of linking lengths used for this analyses are
+
+.. list-table:: FoF Group-finding parameters
+    :widths: 25 75
+    :header-rows: 1
+
+    * - :math:`l_perp`
+      - 0.14
+    * - :math:`l_para`
+      - 0.75
+
 .. _mock_distribution_box:
 -----------------------------------------------
 Distribution of catalogues in simulation box

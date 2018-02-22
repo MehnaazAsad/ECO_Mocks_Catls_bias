@@ -234,7 +234,7 @@ Halos Filaments
 **Affiliation**: The University of Chicago, Universidad Católica de Chile
 
 .. list-table:: List of Parameters - Halo Filaments
-    :widths: 25 60 15
+    :widths: 15 40 15
     :header-rows: 1
 
     * - Field

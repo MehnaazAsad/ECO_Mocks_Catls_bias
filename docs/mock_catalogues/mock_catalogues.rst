@@ -158,17 +158,17 @@ Each mock catalogues contains information about the **galaxy**,
       - magnitudes
     * - :code:`haloid`
       - Dark matter halo ID, as taking from the simulation
-      - 
+      - None
     * - :code:`loghalom`
       - logarithmic value of the DM's mass
       - log(Msun/h) where h=1
     * - :code:`halo_ngal`
       - Total number of galaxies in DM halo. Number of galaxies in the 
         mock may differ from this value
-      - 
+      - None
     * - :code:`cs_flag`
       - Type of galaxy. **Halo central** = 1, **Halo satellite** = 0
-      - 
+      - None
     * - :code:`cz_nodist`
       - Velocity of the galaxy (*without* redshift-space distortions)
       - km/s
@@ -183,7 +183,7 @@ Each mock catalogues contains information about the **galaxy**,
       - km/s
     * - :code:`morph`
       - Galaxy's morphology. 'LT': *Late Type*; 'ET': *Early type*. Used either *goodmorph* (ECO) or *MORPH* (RESOLVE) keys. '-9999' if no matched galaxy
-      - 
+      - None
     * - :code:`logmstar`
       - Log value of galaxy's stellar mass. Used either '*rpgoodmstarsnew*' (ECO) or '*MSTARS*' (RESOLVE) keys in the files
       - log(Msun)
@@ -194,37 +194,30 @@ Each mock catalogues contains information about the **galaxy**,
       - u-band *apparent* magnitude. Used either 'rpsmoothrestumagnew' (ECO) or '*SMOOTHRESTUMAG*' (RESOLVE) keys in the files.
       - magnitudes
     * - :code:`fsmgr`
-      - Stellar mass produced over last Gyr divided by pre-existing stellar 
-        mass from new model set. Used '*rpmeanssfr*' (ECO) or '*MODELFSMGR*' 
+      - Stellar mass produced over last Gyr divided by pre-existing stellar mass from new model set. Used '*rpmeanssfr*' (ECO) or '*MODELFSMGR*' 
         (RESOLVE) keys.
       - (1/Gyr)
     * - :code:`survey_flag`
       - Survey name, from which the properties of the **real** matched galaxy 
         were extracted.
-      - 
+      - None
     * - :code:`u_r`
       - Color of the matched galaxy, i.e. (:code:`umag` - :code:`rmag`)
       - magnitudes
     * - :code:`mhi`
-      - HI mass in galaxy. Used the *predicted* HI massed (matched to the ECO
-        file, i.e. :code:`eco_wresa_050815.dat`) and the key '*MHI*' (RESOLVE).
-        To compute MHI masses using *ECO*, we used the formula 
-        :math:`10^(:code:`MHI` + :code:`logmstar`)`
+      - HI mass in galaxy. Used the *predicted* HI massed (matched to the ECO file, i.e. :code:`eco_wresa_050815.dat`) and the key '*MHI*' (RESOLVE). To compute MHI masses using *ECO*, we used the formula: 10^(:code:`MHI` + :code:`logmstar`)
       - Msun
     * - :code:`groupid`
       - Group ID, to which the galaxy belongs after running *Berlind2006* FoF group finder.
-      - 
+      - None
     * - :code:`g_ngal`
       - Number of galaxies in a group of galaxies
-      - 
+      - None
     * - :code:`halo_rvir`
       - Virial radius of the DM halo, to which the galaxy belongs.
       - Mpc/h with *h* = 1.
     * - :code:`M_group`
-      - Abundance matched mass of the galaxy group. This was calculated by 
-        assuming a monotonic relation between DM halo mass :code:`logM_halo`
-        and the group *total* luminosity. For RESOLVE-B, we used a modified 
-        version of the *ECO* group luminosity function.
+      - Abundance matched mass of the galaxy group. This was calculated by assuming a monotonic relation between DM halo mass :code:`logM_halo` and the group *total* luminosity. For RESOLVE-B, we used a modified version of the *ECO* group luminosity function.
       - Msun/h with *h* = 1
     * - :code:`g_galtype`
       - Type of galaxy. **Group central** = 1, **Group satellite** = 0
@@ -232,7 +225,7 @@ Each mock catalogues contains information about the **galaxy**,
 .. note::
 
     The relationship between velocities (:code:`cz`'s') is the following:
-    :math:`(:code:`cz` - :code:`cz_nodist`)^2 + (vel_tan)^2 = (vel_tot)^2`.
+    (:code:`cz` - :code:`cz_nodist`)^2 + (vel_tan)^2 = (vel_tot)^2.
 
 .. properties_description_main_catl::
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

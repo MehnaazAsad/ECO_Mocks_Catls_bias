@@ -219,12 +219,6 @@ Each mock catalogues contains information about the **galaxy**,
     * - :code:`g_galtype`
       - Type of galaxy. **Group central** = 1, **Group satellite** = 0
       - None
-        
-.. csv-table:: CSV Table
-    :header: "Treat", "Quantity", "Description"
-    :widths: 15, 10, 30
-
-    "Albatross", 2.99, "Abundance matched mass of the galaxy group. This was calculated by assuming a monotonic relation between DM halo mass :code:`logM_halo` and the group *total* luminosity. For RESOLVE-B, we used a modified version of the *ECO* group luminosity function."
 
 
 .. note::

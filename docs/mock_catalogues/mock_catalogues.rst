@@ -128,3 +128,14 @@ Description of the *fields* in the catalogues
 Each mock catalogues contains information about the **galaxy**, 
 **group galaxy**, **host halo**, and more.
 
+.. list-table:: Title
+    :widths: 25 75
+    :header-rows: 1
+
+    * - Field
+      - Description
+    * - :code:`ra`
+      - Right Ascension in *degrees*
+
+
+

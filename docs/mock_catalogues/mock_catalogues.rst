@@ -9,7 +9,8 @@ We construct a set of synthethic (mock) catalogues that have the same
 geometries as the **Environmental COntext** (ECO), **RESOLVE-A**, and 
 **RESOLVE-B** galaxy surveys.
 
-RESOLVE is a volume-limited census of stellar, gas, and dynamical mass as 
+REsolved Spectroscopy Of a Local VolumE (RESOLVE) is a volume-limited 
+census of stellar, gas, and dynamical mass as 
 well as star formation and merging within >50,000 cubic Mpc of the nearby 
 cosmic web, reaching down to the dwarf galaxy regime and up to structures 
 on tens of Mpc scales such as filaments, walls, and voids.
@@ -34,6 +35,10 @@ galaxies in RESOLVE-A and RESOLVE-B galaxy redshift surveys.
 
 RESOLVE-A (footprint demarcated by red dashed lines) embedded within ECO 
 (entire plot showing current footprint, with ECO-B in preparation)
+
+For more information on how the data for the different galaxy surveys 
+were taken, go to the `Main ECO and RESOLVE <https://resolve.astro.unc.edu/>`_
+website.
 
 .. _mock_construction:
 --------------------------
@@ -82,11 +87,11 @@ distance of ~10 Mpc/h between catalogues. We chose this distance of
 catalogues, and also to make the catalogues as independent from each 
 other as possible.
 
-.. |ECO_distr| image:: ../images/ECO_mvir_xyz_mocks.png
+.. image:: ../images/ECO_mvir_xyz_mocks.png
     :align: center
     :alt: Distribution of mock catalogues within simulation box
     :scale: 50 %
 
-Figure |ECO_distr|_ shows how the catalogues for ECO surveys are organized 
+This figure shows how the catalogues for ECO surveys are organized 
 within the simulation box used for this analysis.
 

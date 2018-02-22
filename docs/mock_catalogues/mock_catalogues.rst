@@ -18,3 +18,14 @@ The Environmental COntext (ECO) catalog around RESOLVE is a much larger, purely 
 
 .. image:: ../images/full-size-survey.png
     :scale: 50 %
+    :alt: Full size survey of RESOLVE
+    :align: left
+
++--------------------------------------------+--------------------------------------------+
+| .. figure: ../images/full-size-survey.png  | .. figure: ../images/full-size-survey.png  |
+|   :alt: Full size survey of RESOLVE        |   :alt: Full size survey of RESOLVE        |
+|   :scale: 25%                              |   :scale: 25%                              |
+|                                            |                                            |
+|   Full-size survey of RESOLVE              |                                            |
+|                                            |                                            |
++--------------------------------------------+--------------------------------------------+

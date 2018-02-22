@@ -17,7 +17,6 @@ Contents:
    :maxdepth: 2
 
    mock_catalogues/mock_catalogues
-   commands
 
 
 

@@ -307,8 +307,8 @@ def add_to_dict(param_dict):
     ## Variable constants
     const_dict = val_consts()
     # FoF linking lengths
-    l_perp = 0.14
-    l_para = 0.75
+    l_perp = 0.07
+    l_para = 1.1
     ## Survey name
     if param_dict['survey'] == 'ECO':
         survey_name = 'ECO'

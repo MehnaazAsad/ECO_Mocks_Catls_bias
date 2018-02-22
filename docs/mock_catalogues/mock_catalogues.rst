@@ -29,7 +29,7 @@ This shows the right-ascension (RA) and declination (DEC) of
 galaxies in RESOLVE-A and RESOLVE-B galaxy redshift surveys.
 
 .. image:: ../images/resolve_spring_footprint.png
-    :scale: 50 %
+    :scale: 100 %
     :alt: 
     :align: center
 

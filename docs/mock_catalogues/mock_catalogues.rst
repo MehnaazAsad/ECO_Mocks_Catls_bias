@@ -224,7 +224,7 @@ Each mock catalogues contains information about the **galaxy**,
     :header: "Treat", "Quantity", "Description"
     :widths: 15, 10, 30
 
-    "Albatross", 2.99, "On a stick!"
+    "Albatross", 2.99, "Abundance matched mass of the galaxy group. This was calculated by assuming a monotonic relation between DM halo mass :code:`logM_halo` and the group *total* luminosity. For RESOLVE-B, we used a modified version of the *ECO* group luminosity function."
 
 
 .. note::

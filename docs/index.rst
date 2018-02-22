@@ -8,14 +8,15 @@ ECO/RESOLVE Synthetic Catalogues
 This is the documentation for 
 the `ECO Mocks Catalogue <https://github.com/vcalderon2009/ECO_Mocks_Catls>`_
 repository. In here, you will find the structure and functions used 
-in this repository.
+in this repository, as well as information regarding the three different 
+surveys.
 
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
-   getting-started
+   mock_catalogues/mock_catalogues
    commands
 
 

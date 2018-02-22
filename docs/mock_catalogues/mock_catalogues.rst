@@ -8,6 +8,9 @@ Mock Catalogues
 This is a brief overview of the different aspects of the synthetic 
 catalogues produced for ECO RESOLVE-A and RESOLVE-B surveys
 
+.. contents:: Table of Contents
+    :local:
+
 .. _eco_resolve_main_data:
 --------------------------
 ECO and RESOLVE

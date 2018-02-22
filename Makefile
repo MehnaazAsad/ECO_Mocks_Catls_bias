@@ -17,7 +17,7 @@ MOCKS_CATL_DIR = $(DATA_DIR)/processed/*
 
 # CPU-Fraction
 CPU_FRAC = 0.75
-REMOVE_FILES = "True"
+REMOVE_FILES = "False"
 COSMO_CHOICE="Planck"
 HALOTYPE="m200"
 

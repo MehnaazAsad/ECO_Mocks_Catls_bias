@@ -100,8 +100,12 @@ The set of linking lengths used for this analyses are
 
     * - l_perp
       - l_para
-    * - 0.14
-      - 0.75
+    * - 0.07
+      - 1.1
+
+.. note::
+
+    The units for the linking lengths are in terms of 
 
 .. _mock_distribution_box:
 -----------------------------------------------

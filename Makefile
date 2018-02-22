@@ -19,6 +19,7 @@ MOCKS_CATL_DIR = $(DATA_DIR)/processed/*
 CPU_FRAC = 0.75
 REMOVE_FILES = "True"
 COSMO_CHOICE="Planck"
+HALOTYPE="m200"
 
 ifeq (,$(shell which conda))
 HAS_CONDA=False

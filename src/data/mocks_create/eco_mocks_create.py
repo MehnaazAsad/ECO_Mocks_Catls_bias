@@ -851,10 +851,10 @@ def tarball_create(param_dict, proj_dict, catl_ext='hdf5'):
             gal_pd_mod = catl_drop_cols(gal_pd_kk)
             ## Saving modified DataFrame to file
             file_mod_kk = file_kk+'.mod'
-            cu.pandas_df_to_hdf5_file(gal_pd_mod, file_mod_kk)
+            cu.pandas_df_to_hdf5_file(gal_pd_mod, file_mod_kk, key='\gal_catl')
             cu.File_Exists(file_mod_kk)
             # Saving to Tar-file
-            tf.add(file_kk, arcname=os.path.basename(file_kk))
+            tf.add(file_mod_kk, arcname=os.path.basename(file_kk))
             # Deleting extra file
             os.remove(file_mod_kk)
     tf.close()
@@ -2159,7 +2159,7 @@ def catl_drop_cols(mockgal_pd):
     gal_pd   = mockgal_pd.copy()
     ## Columns
     gal_cols = ['x','y','z','vx','vy','vz','galid','x_orig','y_orig','z_orig',
-                'idx','vel_pec']
+                'idx','vel_pec','ra_orig']
     # New object `without` these columns
     gal_pd_mod = gal_pd.loc[:,~gal_pd.columns.isin(gal_cols)].copy()
 

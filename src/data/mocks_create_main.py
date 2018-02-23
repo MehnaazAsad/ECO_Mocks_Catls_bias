@@ -293,8 +293,8 @@ def file_construction_and_execution(params_pd_data, param_dict):
     # Working directory
     working_dir = os.path.abspath(os.path.dirname(__file__))
     ## Obtaining path to file
-    outfile_name = 'ECO_resolve_mocks_{0}_create_run.sh'.format(
-        param_dict['catl_type'])
+    outfile_name = 'ECO_resolve_mocks_{0}_{1}_create_run.sh'.format(
+        param_dict['catl_type'], param_dict['halotype'])
     outfile_path = os.path.join(working_dir, outfile_name)
     ##
     ## Opening file
@@ -304,7 +304,7 @@ def file_construction_and_execution(params_pd_data, param_dict):
         out_f.write( """## Last Edited: {0}\n\n""".format(now_str).encode())
         out_f.write(b"""### --- Variables\n""")
         out_f.write(b"""ENV_NAME="eco_mocks_catls"\n""")
-        out_f.write( """WINDOW_NAME="ECO_RESOLVE_Mocks_create_{0}"\n""".format(param_dict['halotype']).encode())
+        out_f.write( """WINDOW_NAME="ECO_RESOLVE_Mocks_create_{0}_{1}"\n""".format(param_dict['halotype'], param_dict['survey']).encode())
         out_f.write( """WINDOW_CATL="data_{0}_{1}"\n""".format(param_dict['catl_type'], param_dict['cosmo_choice']).encode())
         out_f.write(b"""# Home Directory\n""")
         out_f.write(b"""home_dir=`eval echo "~$different_user"`\n""")

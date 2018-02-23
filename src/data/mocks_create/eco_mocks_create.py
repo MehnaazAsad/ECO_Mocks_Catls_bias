@@ -1492,9 +1492,184 @@ def resolve_a_geometry_mocks(clf_pd, param_dict, proj_dict):
     ##
     ## Reinitializing `param_dict` to None
     if param_dict['verbose']:
-        print('{0} Creating Mock Catalogues .... Done'.format(Prog_msg))
+        print('\n{0} Creating Mock Catalogues .... Done'.format(Prog_msg))
     param_dict = None
 
+def resolve_b_geometry_mocks(clf_pd, param_dict, proj_dict):
+    """
+    Carves out the geometry of the `RESOLVE-B` survey and produces set 
+    of mock catalogues
+    
+    Parameters
+    -------------
+    clf_pd: pandas DataFrame
+        DataFrame containing information from Halobias + CLF procedures
+    
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    proj_dict: python dictionary
+        dictionary with info of the project that uses the
+        `Data Science` Cookiecutter template.
+    """
+    ## Constants
+    Prog_msg = param_dict['Prog_msg']
+    if param_dict['verbose']:
+        print('{0} Creating Mock Catalogues ....'.format(Prog_msg))
+
+    ## Coordinates dictionary
+    coord_dict    = param_dict['coord_dict'].copy()
+    ## Coordinate and Dataframe lists
+    pos_coords_mocks = []
+    ##########################################
+    ###### ----- 1st Set of Mocks  -----######
+    ##########################################
+    clf_1_pd     = copy.deepcopy(clf_pd)
+    coord_1_dict = coord_dict.copy()
+    # Coordinates
+    x_init_1  =  56.
+    y_init_1  = -25.
+    y_delta_1 =  43.
+    z_init_1  =  3.
+    z_delta_1 =  16.
+    # Determning positions
+    x_pos_1_arr = []
+    y_pos_1_arr = []
+    z_pos_1_arr = []
+    # X
+    x_pos_1_arr.append(56.)
+    # Y
+    while (180. - y_init_1) >= y_delta_1:
+        y_pos_1_arr.append(y_init_1)
+        y_init_1 += y_delta_1
+    # Z
+    while (180. - z_init_1) >= z_delta_1:
+        z_pos_1_arr.append(z_init_1)
+        z_init_1 += z_delta_1
+    ## Looping over positions
+    ncatls = 0
+    for aa in range(len(x_pos_1_arr)):
+        for bb in range(len(y_pos_1_arr)):
+            for cc in range(len(z_pos_1_arr)):
+                ## Appending positions
+                pos_coords_mocks.append([aa, bb, cc, 
+                                         clf_1_pd.copy(), coord_1_dict])
+                ncatls += 1
+    ##########################################
+    ###### ----- 2nd Set of Mocks  -----######
+    ##########################################
+    clf_2_pd     = copy.deepcopy(clf_pd)
+    coord_2_dict = coord_dict.copy()
+    # Changing coordinates
+    x_arr_2 = clf_2_pd['x'].copy()
+    y_arr_2 = clf_2_pd['y'].copy()
+    clf_2_pd.loc[:,'x'] = y_arr_2
+    clf_2_pd.loc[:,'y'] = x_arr_2
+    # Determining positions
+    x_init_2  = 56.
+    y_init_2  = 100.
+    z_init_2  = 3.
+    z_delta_2 = 16.
+    # Determning positions
+    x_pos_2_arr = []
+    y_pos_2_arr = []
+    z_pos_2_arr = []
+    # X
+    x_pos_2_arr.append(56.)
+    # Y
+    y_pos_2_arr.append(100.)
+    # Z
+    while (180. - z_init_2) >= z_delta_2:
+        z_pos_2_arr.append(z_init_2)
+        z_init_2 += z_delta_2
+    ## Looping over positions
+    for aa in range(len(x_pos_2_arr)):
+        for bb in range(len(y_pos_2_arr)):
+            for cc in range(len(z_pos_2_arr)):
+                ## Appending positions
+                pos_coords_mocks.append([aa, bb, cc,
+                                         clf_2_pd, coord_2_dict])
+                ## Incrementing values
+                ncatls += 1
+    ##########################################
+    ###### ----- 3rd Set of Mocks  -----######
+    ##########################################
+    clf_3_pd     = copy.deepcopy(clf_pd)
+    coord_3_dict = coord_dict.copy()
+    # Changing coordinates
+    x_arr_3 = clf_3_pd['x'].copy()
+    z_arr_3 = clf_3_pd['z'].copy()
+    clf_3_pd.loc[:,'x'] = z_arr_3
+    clf_3_pd.loc[:,'z'] = x_arr_3
+    ## Determining positions
+    x_init_3   = 90.
+    y_init_3   = 100.
+    z_delta_3  = 16.
+    z_init_3   = z_delta_3
+    z_buffer_3 = 5.
+    # Determning positions
+    x_pos_3_arr = []
+    y_pos_3_arr = []
+    z_pos_3_arr = []
+    # X
+    x_pos_3_arr.append(90.)
+    # Y
+    y_pos_3_arr.append(100.)
+    # Z
+    while (180. - 111. - z_init_3) >= z_buffer_3:
+        z_pos_3_arr.append(180. - z_init_3)
+        z_init_3 += z_delta_3
+    ## Looping over positions
+    for aa in range(len(x_pos_3_arr)):
+        for bb in range(len(y_pos_3_arr)):
+            for cc in range(len(z_pos_3_arr)):
+                ## Appending positions
+                pos_coords_mocks.append([aa, bb, cc,
+                                         clf_3_pd, coord_3_dict])
+                ## Incrementing values
+                ncatls += 1
+    ##############################################
+    ## Creating mock catalogues
+    ##############################################
+    ##
+    ## ----| Multiprocessing |---- ##
+    ##
+    ## Number of catalogues
+    n_catls = len(pos_coords_mocks)
+    ## CPU counts
+    cpu_number = int(cpu_count() * param_dict['cpu_frac'])
+    ## Step-size for each CPU
+    if cpu_number <= len(pos_coords_mocks):
+        catl_step = int(n_catls / cpu_number)
+        memb_arr  = num.arange(0, n_catls+1, catl_step)
+    else:
+        catl_step = int((n_catls/cpu_number)**-1)
+        memb_arr  = num.arange(0, n_catls+1)
+    ## Array with designated catalogue numbers for each CPU
+    memb_arr[-1] = n_catls
+    ## Tuples of the ID of each catalogue
+    memb_tuples = num.asarray([(memb_arr[xx], memb_arr[xx+1])
+                            for xx in range(memb_arr.size-1)])
+    ## Assigning `memb_tuples` to function `multiprocessing_catls`
+    print('{0} Creating Mock Catalogues ....'.format(param_dict['Prog_msg']))
+    procs = []
+    for ii in range(len(memb_tuples)):
+        ## Defining `proc` element
+        proc = Process(target=multiprocessing_catls,
+                        args=(  memb_tuples[ii], pos_coords_mocks, param_dict, 
+                                proj_dict, ii))
+        # Appending to main `procs` list
+        procs.append(proc)
+        proc.start()
+    ##
+    ## Joining `procs`
+    for proc in procs:
+        proc.join()
+    ##
+    ## Reinitializing `param_dict` to None
+    if param_dict['verbose']:
+        print('\n{0} Creating Mock Catalogues .... Done'.format(Prog_msg))
+    param_dict = None
 
 
 def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
@@ -2798,6 +2973,8 @@ def main(args):
     ## Carving out geometry of Survey and carrying out the analysis
     if param_dict['survey'] == 'ECO':
         eco_geometry_mocks(clf_pd, param_dict, proj_dict)
+    elif param_dict['survey'] == 'A':
+        resolve_a_geometry_mocks(clf_pd, param_dict, proj_dict)
     ## Plotting different catalogues in simulation box
     mockcatls_simbox_plot(param_dict, proj_dict)
     ## Luminosity function for each catalogue

@@ -127,6 +127,15 @@ other as possible.
 This figure shows how the catalogues for ECO surveys are organized 
 within the simulation box used for this analysis.
 
+.. image:: ../images/A_mvir_Planck_xyz_mocks.png
+    :align: center
+    :alt: Distribution of RESOLVE-A mock catalogues within simulation box
+    :scale: 50 %
+
+And this fugre shows the distribution of synthetic **RESOLVE-A** 
+catalogues in the simulation box!
+
+
 .. download_read_catalogues::
 ------------------------------------------------
 Downloading and reading in data from catalogues

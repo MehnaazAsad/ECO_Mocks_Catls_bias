@@ -21,6 +21,7 @@ CPU_FRAC = 0.75
 REMOVE_FILES = "False"
 COSMO_CHOICE="Planck"
 HALOTYPE="m200b"
+SURVEY="ECO"
 
 ifeq (,$(shell which conda))
 HAS_CONDA=False
@@ -72,7 +73,7 @@ endif
 
 ## Create catalogues for `ECO`
 catl_mr_make:
-	@python $(SRC_DIR)/mocks_create_main.py -abopt mr -cpu $(CPU_FRAC) -remove $(REMOVE_FILES) -cosmo $(COSMO_CHOICE) -halotype $(HALOTYPE)
+	@python $(SRC_DIR)/mocks_create_main.py -abopt mr -cpu $(CPU_FRAC) -remove $(REMOVE_FILES) -cosmo $(COSMO_CHOICE) -halotype $(HALOTYPE) -survey $(SURVEY)
 
 ## Delete existing `mock` catalogues
 delete_mock_catls:

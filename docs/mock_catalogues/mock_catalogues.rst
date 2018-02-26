@@ -105,7 +105,8 @@ The set of linking lengths used for this analyses are
 
 .. note::
 
-    The units for the linking lengths are in terms of 
+    The units for the linking lengths are in terms of the mean inter-galaxy 
+    separation of the simulation.
 
 .. _mock_distribution_box:
 -----------------------------------------------

@@ -25,3 +25,4 @@ dependencies:
     - tqdm
     - tables
     - progressbar2
+    - cosmo-utils

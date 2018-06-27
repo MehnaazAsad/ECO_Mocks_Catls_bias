@@ -268,7 +268,7 @@ def main(args):
     print('\n'+50*'='+'\n')
     #
     # Extracting info from `simfile`
-    sim_pd = 
+    
 
 
 # Main function

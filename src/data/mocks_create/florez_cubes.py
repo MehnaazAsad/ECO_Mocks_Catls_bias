@@ -200,14 +200,20 @@ def directory_skeleton(param_dict, proj_dict):
         msg = '{0} `simfile` ({1}) does not exist!'.format(file_msg, simfile)
         raise FileNotFoundError(msg)
     #
+    # Output directory
+    outdir = os.path.join(proj_dict['int_dir'],
+                            'florez_age_matching_results')
+    cfutils.Path_Folder(outdir)
+    #
     # Saving to dictionary
     proj_dict['sim_dir'] = sim_dir
     proj_dict['simfile'] = simfile
+    proj_dict['outdir' ] = outdir
 
     return proj_dict
 
 ## -------------------- Data Extraction -------------------- ##
-def simfile_data_extraction(param_dict, proj_dict):
+def simfile_data_extraction(param_dict, proj_dict, save_file=True):
     """
     Extracts the data from the simulation file and converts it to
     a Pandas DataFrame.
@@ -227,9 +233,13 @@ def simfile_data_extraction(param_dict, proj_dict):
         DataFrame containing the necessary information of `simfile`.
     """
     file_msg = param_dict['Prog_msg']
+    # Output filepath
+    filename = os.path.join(proj_dict['outdir'],
+                    os.path.basename(proj_dict['simfile']))
     # Constatns
     cens = int(1)
     sats = int(0)
+    failval = -1
     # Columns to be extracted
     sim_cols = ['Mbaryon', 'Vpeak', 'mvir', 'Acc_Rate_100Myr', 'u-r',
                 'FSMGR', 'pid', 'id', 'upid']
@@ -238,8 +248,40 @@ def simfile_data_extraction(param_dict, proj_dict):
     # Only selecting certaing columns
     sim_pd = sim_pd_tot.loc[:, sim_cols]
     #
-    # Figuring out host halo's mass
-    halo_id = [[] for x in range(len(sim_pd))]
+    # -- Figuring out host halo's mass
+    mvir_arr     = sim_pd['mvir'].values
+    galid_arr    = sim_pd['id']
+    gal_upid_arr = sim_pd['upid']
+    # Defining new array
+    halo_m = [[] for x in range(len(sim_pd))]
+    # Looping over galaxies
+    for gal in tqdm(range(len(sim_pd))):
+        if (gal_upid_arr[gal] == -1):
+            mhalo_gal = float(mvir_arr[gal])
+        else:
+            try:
+                upid_gal = gal_upid_arr[gal]
+                mhalo_gal = float(mvir_arr[num.where(galid_arr == upid_gal)[0]])
+            except:
+                mhalo_gal = failval
+        #
+        # Saving into array
+        halo_m[gal] = mhalo_gal
+    #
+    # Saving to the main DataFrame
+    sim_pd.loc[:, 'mhalo_host'] = halo_m
+    #
+    # Deleting columns
+    sim_pd.drop(['mvir', 'id', 'upid', 'pid'], inplace=True, axis=1)
+    #
+    # Saving file if necessary
+    if save_file:
+        cfreaders.pandas_df_to_hdf5_file(sim_pd, filename, key='sim_data')
+        cfutils.File_Exists(filename)
+
+    return sim_pd
+
+# Saving file to output file
 
 ## -------------------- Main Function -------------------- ##
 
@@ -268,8 +310,7 @@ def main(args):
     print('\n'+50*'='+'\n')
     #
     # Extracting info from `simfile`
-    
-
+    sim_pd = simfile_data_extraction(param_dict, proj_dict)
 
 # Main function
 if __name__=='__main__':

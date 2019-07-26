@@ -1893,7 +1893,7 @@ def makemock_catl(clf_ii, coord_dict_ii, zz_mock, param_dict, proj_dict):
     dc_max      = z_como_pd['d_como'].max()
     dc_z_interp = interp1d(z_como_pd['d_como'], z_como_pd['z'])
     ## Redshift-space distortions
-    # Cartesina Coordinates
+    # Cartesian Coordinates
     cart_gals   = clf_ii[['x' ,'y' ,'z' ]].values
     vel_gals    = clf_ii[['vx','vy','vz']].values
     ## Initializing arrays
@@ -1984,7 +1984,7 @@ def makemock_catl(clf_ii, coord_dict_ii, zz_mock, param_dict, proj_dict):
     ##
     ## New Catalogue
     if len(mock_pd) != 0:
-        ## Chaning RA values
+        ## Changing RA values
         if coord_dict_ii['ra_min'] < 0.:
             ra_min_limit  = coord_dict_ii['ra_min'] + 360.
             ra_new_arr    = mock_pd['ra'].values
@@ -2014,10 +2014,11 @@ def makemock_catl(clf_ii, coord_dict_ii, zz_mock, param_dict, proj_dict):
     mock_pd.reset_index(inplace=True, drop=True)
     ##
     ## Assert that coordinates fall within Survey limits
-    assert( (mock_pd['ra' ].min() >= coord_dict_ii['ra_min_real']) &
-            (mock_pd['ra' ].max() <= coord_dict_ii['ra_max_real']) &
-            (mock_pd['dec'].min() >= coord_dict_ii['dec_min'    ]) &
-            (mock_pd['dec'].max() <= coord_dict_ii['dec_max'    ]))
+    if (param_dict['survey'] != 'B'):
+        assert( (mock_pd['ra' ].min() >= coord_dict_ii['ra_min_real']) &
+                (mock_pd['ra' ].max() <= coord_dict_ii['ra_max_real']) &
+                (mock_pd['dec'].min() >= coord_dict_ii['dec_min'    ]) &
+                (mock_pd['dec'].max() <= coord_dict_ii['dec_max'    ]))
     ##
     ## Saving file to Pandas DataFrame
     cu.pandas_df_to_hdf5_file(mock_pd, mock_catl_pd_file, key='galcatl')
@@ -2145,7 +2146,7 @@ def survey_specs(param_dict):
         mr_limit   = -17.33
     ##
     ## Right Ascension and Declination coordinates for each survey
-    if param_dict['survey'] == 'A':
+    if (param_dict['survey'] == 'A'):
         ra_min_real = 131.25
         ra_max_real = 236.25
         dec_min     = 0.
@@ -2161,7 +2162,7 @@ def survey_specs(param_dict):
         assert(ra_range >= 0)
         assert(ra_min < ra_max)
         assert(ra_min_real < ra_max_real)
-    elif param_dict['survey'] == 'B':
+    elif (param_dict['survey'] == 'B'):
         ra_min_real = 330.
         ra_max_real = 45.
         dec_min     = -1.25
@@ -2176,7 +2177,7 @@ def survey_specs(param_dict):
         assert(dec_min < dec_max)
         assert(ra_range >= 0)
         assert(ra_min < ra_max)
-    elif param_dict['survey'] == 'ECO':
+    elif (param_dict['survey'] == 'ECO'):
         ra_min_real = 130.05
         ra_max_real = 237.45
         dec_min     = -1

@@ -1587,7 +1587,7 @@ def resolve_b_geometry_mocks(clf_pd, param_dict, proj_dict):
         for bb in y_pos_1_arr:
             for cc in z_pos_1_arr:
                 ## Appending positions
-                pos_coords_mocks.append([aa, bb, cc]),
+                pos_coords_mocks.append([aa, bb, cc,
                                          clf_1_pd.copy(), coord_1_dict])
     ##########################################
     ###### ----- 2nd Set of Mocks  -----######

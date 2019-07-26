@@ -862,6 +862,31 @@ def tarball_create(param_dict, proj_dict, catl_ext='hdf5'):
     if param_dict['verbose']:
         print('{0} TAR file saved as: {1}'.format(Prog_msg, tar_file_path))
 
+def distance_difference_calc(r2, s1, gap):
+    """
+    Computes the necessary distance between mocks given geometrical
+    components of the survey.
+
+    Parameters
+    -----------
+    r2 : `float`
+
+    s1 : `float`
+
+    gap : `float`
+
+    Returns
+    ----------
+    dist_diff : `float`
+    """
+    # Converting to floats
+    r2  = float(r2)
+    s1  = float(s1)
+    gap = float(gap)
+
+    dist_diff = (((r2 + gap)**2 - (0.5 * s1)**2)**0.5) - r2
+
+    return dist_diff
 ## -----------| Halobias-related functions |----------- ##
 
 def hb_file_construction_extras(param_dict, proj_dict):
@@ -1527,59 +1552,88 @@ def resolve_b_geometry_mocks(clf_pd, param_dict, proj_dict):
     clf_1_pd     = copy.deepcopy(clf_pd)
     coord_1_dict = coord_dict.copy()
     # Coordinates
-    x_init_1  =  56.
-    y_init_1  = -25.
-    y_delta_1 =  43.
-    z_init_1  =  3.
-    z_delta_1 =  16.
-    # Determning positions
+    gap_1    = 10.
+    # Deltas
+    y_delta_1 = (coord_1_dict['h_total'] +
+                    distance_difference_calc(   coord_1_dict['r_arr'][1],
+                                                0.5 * coord_1_dict['s1_top'],
+                                                gap_1))
+    z_delta_1 = gap_1 + coord_1_dict['d_th']
+    # Initial Points
+    x_init_1  = 0.5 * coord_1_dict['s2']
+    y_init_1  = -1. * coord_1_dict['h1']
+    if (coord_1_dict['dec_min'] < 0):
+        z_init_1 = coord_1_dict['dec_range'] + 1
+    else:
+        z_init_1 = 3.
+    # Number of mocks in axes
+    y_mocks_n_1 = 4
+    z_mocks_n_1 = int(num.floor(param_dict['size_cube'] / z_delta_1))
+    # Determining positions for initial points
     x_pos_1_arr = []
     y_pos_1_arr = []
     z_pos_1_arr = []
     # X
-    x_pos_1_arr.append(56.)
+    x_pos_1_arr.append(x_init_1)
     # Y
-    while (180. - y_init_1) >= y_delta_1:
+    for kk in range(y_mocks_n_1):
         y_pos_1_arr.append(y_init_1)
         y_init_1 += y_delta_1
     # Z
-    while (180. - z_init_1) >= z_delta_1:
+    for kk in range(z_mocks_n_1):
         z_pos_1_arr.append(z_init_1)
         z_init_1 += z_delta_1
     ## Looping over positions
-    ncatls = 0
     for aa in range(len(x_pos_1_arr)):
         for bb in range(len(y_pos_1_arr)):
             for cc in range(len(z_pos_1_arr)):
                 ## Appending positions
                 pos_coords_mocks.append([aa, bb, cc, 
                                          clf_1_pd.copy(), coord_1_dict])
-                ncatls += 1
     ##########################################
     ###### ----- 2nd Set of Mocks  -----######
     ##########################################
     clf_2_pd     = copy.deepcopy(clf_pd)
     coord_2_dict = coord_dict.copy()
     # Changing coordinates
-    x_arr_2 = clf_2_pd['x'].copy()
-    y_arr_2 = clf_2_pd['y'].copy()
-    clf_2_pd.loc[:,'x'] = y_arr_2
-    clf_2_pd.loc[:,'y'] = x_arr_2
-    # Determining positions
-    x_init_2  = 56.
-    y_init_2  = 100.
-    z_init_2  = 3.
-    z_delta_2 = 16.
-    # Determning positions
+    coord_2_dict['ra_min'] += 180.
+    coord_2_dict['ra_max'] += 180.
+    coord_2_dict['ra_diff'] = (coord_2_dict['ra_max_real'] -
+                                coord_2_dict['ra_max'])
+    assert( (coord_2_dict['ra_min'] < coord_2_dict['ra_max']) &
+            (coord_2_dict['ra_min'] <= 360.) &
+            (coord_2_dict['ra_max'] <= 360.))
+    # Coordinate parameters
+    gap_2 = 10.
+    # Deltas
+    y_delta_2 = (coord_2_dict['h_total'] +
+                    distance_difference_calc(   coord_2_dict['r_arr'][1],
+                                                coord_2_dict['s1_top'],
+                                                gap_2))
+    z_delta_2 = gap_2 + coord_2_dict['d_th']
+    # Initial points
+    x_init_2 = param_dict['size_cube'] - (0.5 * coord_2_dict['s2'])
+    y_init_2 = param_dict['size_cube'] + coord_2_dict['h1']
+    if (coord_2_dict['dec_min'] < 0):
+        z_init_2 = coord_2_dict['dec_range'] + 1
+    else:
+        z_init_2 = 3.
+    assert(y_init_2 >= param_dict['size_cube'])
+    # Number of mocks in directions
+    y_mocks_n_2 = int(num.floor(param_dict['size_cube'] / y_delta_2))
+    z_mocks_n_2 = int(num.floor(param_dict['size_cube'] / z_delta_2))
+    # Determining initial positions
     x_pos_2_arr = []
     y_pos_2_arr = []
     z_pos_2_arr = []
     # X
-    x_pos_2_arr.append(56.)
+    x_pos_2_arr.append(x_init_2)
     # Y
-    y_pos_2_arr.append(100.)
+    for kk in range(y_mocks_n_2):
+        y_pos_2_arr.append(y_init_2)
+        y_init_2 -= y_delta_2
     # Z
-    while (180. - z_init_2) >= z_delta_2:
+    for kk in range(z_mocks_n_2):
         z_pos_2_arr.append(z_init_2)
         z_init_2 += z_delta_2
     ## Looping over positions
@@ -1587,47 +1641,8 @@ def resolve_b_geometry_mocks(clf_pd, param_dict, proj_dict):
         for bb in range(len(y_pos_2_arr)):
             for cc in range(len(z_pos_2_arr)):
                 ## Appending positions
-                pos_coords_mocks.append([aa, bb, cc,
-                                         clf_2_pd, coord_2_dict])
-                ## Incrementing values
-                ncatls += 1
-    ##########################################
-    ###### ----- 3rd Set of Mocks  -----######
-    ##########################################
-    clf_3_pd     = copy.deepcopy(clf_pd)
-    coord_3_dict = coord_dict.copy()
-    # Changing coordinates
-    x_arr_3 = clf_3_pd['x'].copy()
-    z_arr_3 = clf_3_pd['z'].copy()
-    clf_3_pd.loc[:,'x'] = z_arr_3
-    clf_3_pd.loc[:,'z'] = x_arr_3
-    ## Determining positions
-    x_init_3   = 90.
-    y_init_3   = 100.
-    z_delta_3  = 16.
-    z_init_3   = z_delta_3
-    z_buffer_3 = 5.
-    # Determning positions
-    x_pos_3_arr = []
-    y_pos_3_arr = []
-    z_pos_3_arr = []
-    # X
-    x_pos_3_arr.append(90.)
-    # Y
-    y_pos_3_arr.append(100.)
-    # Z
-    while (180. - 111. - z_init_3) >= z_buffer_3:
-        z_pos_3_arr.append(180. - z_init_3)
-        z_init_3 += z_delta_3
-    ## Looping over positions
-    for aa in range(len(x_pos_3_arr)):
-        for bb in range(len(y_pos_3_arr)):
-            for cc in range(len(z_pos_3_arr)):
-                ## Appending positions
-                pos_coords_mocks.append([aa, bb, cc,
-                                         clf_3_pd, coord_3_dict])
-                ## Incrementing values
-                ncatls += 1
+                pos_coords_mocks.append([aa, bb, cc, 
+                                         clf_2_pd.copy(), coord_2_dict])
     ##############################################
     ## Creating mock catalogues
     ##############################################
@@ -2044,7 +2059,7 @@ def catl_create_main(zz_mock, pos_coords_mocks_zz, param_dict, proj_dict):
     ## Reading in input parameters
     # Copy of 'pos_coords_mocks_zz'
     pos_coords_mocks_zz_copy = copy.deepcopy(pos_coords_mocks_zz)
-    # Paramters
+    # Parameters
     (   x_ii         ,
         y_ii         ,
         z_ii         ,
@@ -2090,7 +2105,7 @@ def catl_create_main(zz_mock, pos_coords_mocks_zz, param_dict, proj_dict):
     ##
     ## Dropping columns from `mockgal_pd` and `mockgroup_pd`
     ##
-    ## Writing output files - `Normal Catalogues`
+    ## Writing output files - `Normal Catalogs`
     writing_to_output_file(mockgal_pd, mockgroup_pd, zz_mock,
         param_dict, proj_dict, perf_catl=False)
 
@@ -2883,7 +2898,7 @@ def mocks_lum_function(param_dict, proj_dict, catl_ext='.hdf5',
 def multiprocessing_catls(memb_tuples_ii, pos_coords_mocks, param_dict, 
     proj_dict, ii_mock):
     """
-    Distributes the analyis of the creation of mock catalogues into 
+    Distributes the analysis of the creation of mock catalogues into 
     more than 1 processor
 
     Parameters
@@ -2892,7 +2907,7 @@ def multiprocessing_catls(memb_tuples_ii, pos_coords_mocks, param_dict,
         tuple of catalogue indices to be analyzed
 
     pos_coords_mocks_ii: tuple, shape (4,)
-        tuple with the positons coordinates, coordinate dictionary, 
+        tuple with the positions coordinates, coordinate dictionary, 
         and DataFrame to be used
 
     param_dict: python dictionary
@@ -2971,10 +2986,12 @@ def main(args):
     else:
         clf_pd = param_dict['clf_pd']
     ## Carving out geometry of Survey and carrying out the analysis
-    if param_dict['survey'] == 'ECO':
+    if (param_dict['survey'] == 'ECO'):
         eco_geometry_mocks(clf_pd, param_dict, proj_dict)
-    elif param_dict['survey'] == 'A':
+    elif (param_dict['survey'] == 'A'):
         resolve_a_geometry_mocks(clf_pd, param_dict, proj_dict)
+    elif (param_dict['survey'] == 'B'):
+        resolve_b_geometry_mocks(clf_pd, param_dict, proj_dict)
     ## Plotting different catalogues in simulation box
     mockcatls_simbox_plot(param_dict, proj_dict)
     ## Luminosity function for each catalogue

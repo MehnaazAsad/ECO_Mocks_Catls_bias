@@ -99,7 +99,8 @@ catl_mr_make:
 
 ## Delete existing `mock` catalogues
 delete_mock_catls:
-	find $(MOCKS_CATL_DIR) -type f -name '*.hdf5' -name '*.gz' -delete
+	find $(MOCKS_CATL_DIR) -type f -name '*.hdf5' -delete
+	find $(MOCKS_CATL_DIR) -type f -name '*.gz' -delete
 
 ## Delete all files, except for `raw` files
 delete_all_but_raw:

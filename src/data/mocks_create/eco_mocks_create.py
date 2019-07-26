@@ -1518,7 +1518,6 @@ def resolve_a_geometry_mocks(clf_pd, param_dict, proj_dict):
     ## Reinitializing `param_dict` to None
     if param_dict['verbose']:
         print('\n{0} Creating Mock Catalogues .... Done'.format(Prog_msg))
-    param_dict = None
 
 def resolve_b_geometry_mocks(clf_pd, param_dict, proj_dict):
     """
@@ -1544,7 +1543,7 @@ def resolve_b_geometry_mocks(clf_pd, param_dict, proj_dict):
 
     ## Coordinates dictionary
     coord_dict    = param_dict['coord_dict'].copy()
-    ## Coordinate and Dataframe lists
+    ## Coordinate and DataFrame lists
     pos_coords_mocks = []
     ##########################################
     ###### ----- 1st Set of Mocks  -----######
@@ -1584,11 +1583,11 @@ def resolve_b_geometry_mocks(clf_pd, param_dict, proj_dict):
         z_pos_1_arr.append(z_init_1)
         z_init_1 += z_delta_1
     ## Looping over positions
-    for aa in range(len(x_pos_1_arr)):
-        for bb in range(len(y_pos_1_arr)):
-            for cc in range(len(z_pos_1_arr)):
+    for aa in x_pos_1_arr:
+        for bb in y_pos_1_arr:
+            for cc in z_pos_1_arr:
                 ## Appending positions
-                pos_coords_mocks.append([aa, bb, cc, 
+                pos_coords_mocks.append([aa, bb, cc]),
                                          clf_1_pd.copy(), coord_1_dict])
     ##########################################
     ###### ----- 2nd Set of Mocks  -----######
@@ -1637,9 +1636,9 @@ def resolve_b_geometry_mocks(clf_pd, param_dict, proj_dict):
         z_pos_2_arr.append(z_init_2)
         z_init_2 += z_delta_2
     ## Looping over positions
-    for aa in range(len(x_pos_2_arr)):
-        for bb in range(len(y_pos_2_arr)):
-            for cc in range(len(z_pos_2_arr)):
+    for aa in x_pos_2_arr:
+        for bb in y_pos_2_arr:
+            for cc in z_pos_2_arr:
                 ## Appending positions
                 pos_coords_mocks.append([aa, bb, cc, 
                                          clf_2_pd.copy(), coord_2_dict])
@@ -1684,8 +1683,6 @@ def resolve_b_geometry_mocks(clf_pd, param_dict, proj_dict):
     ## Reinitializing `param_dict` to None
     if param_dict['verbose']:
         print('\n{0} Creating Mock Catalogues .... Done'.format(Prog_msg))
-    param_dict = None
-
 
 def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
     """
@@ -1842,7 +1839,6 @@ def eco_geometry_mocks(clf_pd, param_dict, proj_dict):
     ## Reinitializing `param_dict` to None
     if param_dict['verbose']:
         print('{0} Creating Mock Catalogues .... Done'.format(Prog_msg))
-    param_dict = None
 
 def makemock_catl(clf_ii, coord_dict_ii, zz_mock, param_dict, proj_dict):
     """

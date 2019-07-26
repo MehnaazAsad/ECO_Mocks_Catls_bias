@@ -93,7 +93,7 @@ endif
 # PROJECT RULES                                                                 #
 #################################################################################
 
-## Create catalogues for `ECO`
+## Create catalogues for `ECO` and/or RESOLVE `A`/`B`
 catl_mr_make:
 	@python $(SRC_DIR)/mocks_create_main.py -abopt mr -cpu $(CPU_FRAC) -remove $(REMOVE_FILES) -cosmo $(COSMO_CHOICE) -halotype $(HALOTYPE) -survey $(SURVEY)
 

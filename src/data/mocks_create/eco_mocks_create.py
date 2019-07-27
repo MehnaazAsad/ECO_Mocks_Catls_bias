@@ -836,6 +836,20 @@ def tarball_create(param_dict, proj_dict, catl_ext='hdf5'):
                                     'README_RTD.pdf')
     cu.File_Download_needed(readme_file, param_dict['readme_url'])
     cu.File_Exists(readme_file)
+    # Cartesian coordinates for all mocks
+    cart_pos_fig = os.path.join(   proj_dict['fig_dir'],
+                            '{0}_{1}_{2}_xyz_mocks.{3}'.format(
+                                param_dict['survey'],
+                                param_dict['halotype'],
+                                param_dict['cosmo_choice'],
+                                'pdf'))
+    # Luminosity function
+    lum_func_catls = os.path.join(   proj_dict['fig_dir'],
+                            '{0}_{1}_{2}_lum_function_mocks.{3}'.format(
+                                param_dict['survey'],
+                                param_dict['halotype'],
+                                param_dict['cosmo_choice'],
+                                'pdf'))
     ## Saving to TAR file
     tar_file_path = os.path.join(   proj_dict['tar_dir'],
                                     '{0}_{1}_catls.tar.gz'.format(
@@ -843,7 +857,11 @@ def tarball_create(param_dict, proj_dict, catl_ext='hdf5'):
                                         param_dict['halotype']))
     # Opening file
     with tarfile.open(tar_file_path, mode='w:gz') as tf:
+        # README file
         tf.add(readme_file, arcname=os.path.basename(readme_file))
+        # Figures
+        tf.add(cart_pos_fig, arcname=os.path.basename(cart_pos_fig))
+        tf.add(lum_func_catls, arcname=os.path.basename(lum_func_catls))
         for file_kk in catl_path_arr:
             ## Reading in DataFrame
             gal_pd_kk = cu.read_hdf5_file_to_pandas_DF(file_kk)

@@ -133,8 +133,16 @@ within the simulation box used for this analysis.
     :alt: Distribution of RESOLVE-A mock catalogues within simulation box
     :scale: 50 %
 
-And this fugre shows the distribution of synthetic **RESOLVE-A** 
+And this figure shows the distribution of synthetic **RESOLVE-A** 
 catalogues in the simulation box!
+
+.. image:: ../images/B_m200b_Planck_xyz_mocks.png
+    :align: center
+    :alt: Distribution of RESOLVE-B mock catalogues within simulation box
+    :scale: 50 %
+
+Finally, this figure shows the Cartesian representation of the positions
+of galaxies in the **RESOLVE-B** survey.
 
 
 .. download_read_catalogues::

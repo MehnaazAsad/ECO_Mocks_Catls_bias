@@ -70,9 +70,9 @@ def get_code_c(node=None):
     """
     if node==None: node = get_system()
     if node=='bender': 
-        # path='/home/caldervf/Codes2/custom_utilities_c/'
+        #path='/home/caldervf/Codes2/custom_utilities_c/'
         # Temporarily changing the path to files
-        path = '/fs1/caldervf/custom_utilities_c'
+        path = '/fs1/caldervf/custom_utilities_c/'
     elif node=='Victors-MacBook-Pro-2':
         path='/Users/victor2/Codes/custom_utilities_c/'
     else:

@@ -10,7 +10,9 @@ Repository for creating ECO synthetic catalogues
 
 ## Installing Environment & Dependencies
 
-To use the scripts in this repository, you must have _Anaconda_ installed on the systems that will be running the scripts. This will simplify the process of installing all the dependencies.
+To use the scripts in this repository, you must have _Anaconda_ installed on
+the systems that will be running the scripts. This will simplify the process
+of installing all the dependencies.
 
 For reference, see: [https://conda.io/docs/user-guide/tasks/manage-environments.html](https://conda.io/docs/user-guide/tasks/manage-environments.html)
 

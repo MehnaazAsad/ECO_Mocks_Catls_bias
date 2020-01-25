@@ -19,6 +19,7 @@ dependencies:
   - pip:
     - GitPython
     - progressbar2
+    - beautifulsoup4
     - hmf
     - CosmoloPy
     - requests
@@ -26,4 +27,3 @@ dependencies:
     - tables
     - progressbar2
     - cosmo-utils
-    - BeautifulSoup

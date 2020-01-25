@@ -26,3 +26,4 @@ dependencies:
     - tables
     - progressbar2
     - cosmo-utils
+    - BeautifulSoup

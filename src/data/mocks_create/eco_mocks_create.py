@@ -3,7 +3,7 @@
 
 # Victor Calderon
 # Created      : 2018-02-20
-# Last Modified: 2019-07-26
+# Last Modified: 2020-01-24
 # Vanderbilt University
 from __future__ import print_function, division, absolute_import
 __author__     =['Victor Calderon']
@@ -52,6 +52,8 @@ import copy
 from multiprocessing import Pool, Process, cpu_count
 from scipy.interpolate import interp1d
 import tarfile
+import requests
+from bs4 import BeautifulSoup
 
 
 ## Functions
@@ -448,6 +450,38 @@ def directory_skeleton(param_dict, proj_dict):
 
     return proj_dict
 
+def get_url_paths(url, ext='ff'):
+    """
+    Function to obtain the list of elements in ``url``.
+
+    Parameters
+    -------------
+    url : `str`
+        Path to the Internet address.
+
+    ext : `str`, optional
+        File extension to search for. This variable is set to ``ff`` by
+        default.
+
+    Returns
+    ----------
+    parent_arr : list
+        List of files in ``url`` that match ``ext`` extension.
+    """
+    # Connecting to `url`
+    response = requests.get(url)
+    # Checking connection
+    if response.ok:
+        response_text = response.text
+    else:
+        return response.raise_for_status()
+    # Parsing HTML from website
+    soup = BeautifulSoup(response_text, 'html.parser')
+    # Extracting filenames that match the criteria of `ext`.
+    parent = [url + node.get('href') for node in soup.find_all('a') if node.get('href').endswith(ext)]
+
+    return parent
+
 def plot_const():
     """
     Returns constants for plotting
@@ -658,6 +692,52 @@ def hmf_calc(cosmo_model, proj_dict, param_dict, Mmin=10, Mmax=16,
         columns=['logM','ngtm'])
     # Saving to `param_dict`
     param_dict['hmf_pd'] = hmf_pd
+
+    return param_dict
+
+def hb_files_extract(param_dict, ext='ff'):
+    """
+    Lists the set of files in `url_catl`
+
+    Parameters
+    ------------
+    param_dict: python dictionary
+        dictionary with `project` variables
+
+    ext : `str`, optional
+        File extension to look for in ``url-catl``. This variable is set
+        to ``ff`` by default.
+
+    Returns
+    ----------
+    param_dict: python dictionary
+        Dictionary with `project` variables + the list of Halobias files
+        in `url_catl`.
+
+    Notes
+    -------
+    Taken from
+    `https://stackoverflow.com/questions/11023530/python-to-list-http-files-and-directories <https://stackoverflow.com/questions/11023530/python-to-list-http-files-and-directories>`_
+    """
+    # Main URL
+    hb_url_web = os.path.join(param_dict['url_catl'],
+                                'HB_files',
+                                param_dict['halotype'])
+    # Connecting to `url_catl`
+    response = requests.get(hb_url_web)
+    # Checking if connection was successful
+    if response.ok:
+        response_text = response.text
+    else:
+        return response.raise_for_status()
+    # Parsing HTML
+    soup = BeautifulSoup(response_text, 'html.parser')
+    # Getting list of files
+    hb_files_arr = [url + node.get('href') for node in soup.find_all('a')
+        if node.get('href').endswith(ext)]
+    #
+    # Saving to `param_dict`
+    param_dict['hb_files_arr'] = hb_files_arr
 
     return param_dict
 
@@ -2960,8 +3040,9 @@ def main(args):
     param_vals_test(param_dict)
     ## Program message
     Prog_msg = param_dict['Prog_msg']
-    ## Adding additonal parameters
+    ## Adding additional parameters
     param_dict = add_to_dict(param_dict)
+    ## List of halobias files
     ##
     ## Creating Folder Structure
     # proj_dict  = directory_skeleton(param_dict, cu.cookiecutter_paths(__file__))
@@ -2981,6 +3062,9 @@ def main(args):
     ## Halo mass function
     param_dict = hmf_calc(param_dict['cosmo_model'], proj_dict, param_dict,
         Mmin=6., Mmax=16.01, dlog10m=1.e-3, hmf_model=param_dict['hmf_model'])
+    ##
+    ## List of halobias files
+    param_dict = hb_files_extract(param_dict)
     ##
     ## Downloading files
     param_dict = download_files(param_dict, proj_dict)

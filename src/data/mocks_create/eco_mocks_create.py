@@ -3057,7 +3057,7 @@ def main(args):
     ## Printing out project variables
     print('\n'+50*'='+'\n')
     for key, key_val in sorted(param_dict.items()):
-        if key !='Prog_msg':
+        if not key in ['Prog_msg', 'hb_files_arr', 'plot_dict', 'hod_dict']:
             print('{0} `{1}`: {2}'.format(Prog_msg, key, key_val))
     print('\n'+50*'='+'\n')
     ##
@@ -3067,7 +3067,7 @@ def main(args):
     param_dict = survey_specs(param_dict)
     #
     # Looping over different hb_files
-    for hb_ii, ii in enumerate(hb_files_arr):
+    for ii, hb_ii in enumerate(hb_files_arr):
         #
         # Copy of `param_dict`
         param_dict_mod = param_dict.copy()

@@ -722,7 +722,7 @@ def hb_files_extract(param_dict, ext='ff'):
     # Main URL
     hb_url_web = os.path.join(param_dict['url_catl'],
                                 'HB_files',
-                                param_dict['halotype'])
+                                param_dict['halotype'] + '/')
     # Connecting to `url_catl`
     response = requests.get(hb_url_web)
     # Checking if connection was successful
@@ -733,7 +733,7 @@ def hb_files_extract(param_dict, ext='ff'):
     # Parsing HTML
     soup = BeautifulSoup(response_text, 'html.parser')
     # Getting list of files
-    hb_files_arr = [url + node.get('href') for node in soup.find_all('a')
+    hb_files_arr = [hb_url_web + node.get('href') for node in soup.find_all('a')
         if node.get('href').endswith(ext)]
     #
     # Saving to `param_dict`

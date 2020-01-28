@@ -334,7 +334,7 @@ def add_to_dict(param_dict):
 
     return param_dict
 
-def directory_skeleton(param_dict, proj_dict):
+def directory_skeleton(param_dict, proj_dict, hb_ii):
     """
     Creates the directory skeleton for the current project
 
@@ -347,11 +347,16 @@ def directory_skeleton(param_dict, proj_dict):
         dictionary with info of the project that uses the
         `Data Science` Cookiecutter template.
 
+    hb_ii : str
+        Path to the Halobias file in question.
+
     Returns
     ---------
     proj_dict: python dictionary
         Dictionary with current and new paths to project directories
     """
+    # Basename for `hb_ii`
+    hb_ii_basename = os.path.basename(hb_ii).split('.')[0]
     # Raw directory
     raw_dir      = os.path.join(proj_dict['data_dir'],
                                 'raw')
@@ -383,13 +388,15 @@ def directory_skeleton(param_dict, proj_dict):
                                 'HALO_NGAL_CLF',
                                 param_dict['cosmo_choice'],
                                 param_dict['halotype'],
-                                param_dict['survey'] + '/')
+                                param_dict['survey'],
+                                hb_ii_basename + '/')
     ## Catalogues
     catl_outdir = os.path.join( proj_dict['data_dir'],
                                 'processed',
                                 param_dict['cosmo_choice'],
                                 param_dict['halotype'],
-                                param_dict['survey'])
+                                param_dict['survey'],
+                                hb_ii_basename)
     ## Photometry files
     phot_dir    = os.path.join( raw_dir,
                                 'surveys_phot_files')
@@ -397,14 +404,16 @@ def directory_skeleton(param_dict, proj_dict):
     fig_dir     = os.path.join( proj_dict['plot_dir'],
                                 param_dict['cosmo_choice'],
                                 param_dict['halotype'],
-                                param_dict['survey'])
+                                param_dict['survey'],
+                                hb_ii_basename)
     ## TAR folder
     tar_dir     = os.path.join( proj_dict['data_dir'],
                                 'processed',
                                 'TAR_files',
                                 param_dict['cosmo_choice'],
                                 param_dict['halotype'],
-                                param_dict['survey'])
+                                param_dict['survey'],
+                                hb_ii_basename)
     ## Creating output folders for the catalogues
     mock_cat_mgc     = os.path.join(catl_outdir, 'galaxy_catalogues')
     mock_cat_mc      = os.path.join(catl_outdir, 'member_galaxy_catalogues')
@@ -741,7 +750,7 @@ def hb_files_extract(param_dict, ext='ff'):
 
     return param_dict
 
-def download_files(param_dict, proj_dict):
+def download_files(param_dict, proj_dict, hb_ii):
     """
     Downloads the required files to a specific set of directories
     
@@ -753,6 +762,9 @@ def download_files(param_dict, proj_dict):
     proj_dict: python dictionary
         dictionary with info of the project that uses the
         `Data Science` Cookiecutter template.
+
+    hb_ii : str
+        Path to the Halobias file in question.
 
     Returns
     ------------
@@ -793,14 +805,10 @@ def download_files(param_dict, proj_dict):
     eco_lum_file_web   = os.path.join(  eco_web_dir,
                                         'Dens_Mag_Interp_ECO.ascii')
     ## Halobias file
+    hb_ii_basename = os.path.basename(hb_ii)
     hb_file_local      = os.path.join(  proj_dict['hb_files_dir'],
-                                        'Resolve_plk_5001_so_{0}_hod1.ff'.format(
-                                            param_dict['halotype']))
-    hb_file_web        = os.path.join(  param_dict['url_catl'],
-                                        'HB_files',
-                                        param_dict['halotype'],
-                                        'Resolve_plk_5001_so_{0}_hod1.ff'.format(
-                                            param_dict['halotype']))
+                                        hb_ii_basename)
+    hb_file_web        = hb_ii
     ##
     ## Downloading files
     files_local_arr = [ mhi_file_local       , eco_phot_file_local,
@@ -3043,10 +3051,8 @@ def main(args):
     ## Adding additional parameters
     param_dict = add_to_dict(param_dict)
     ## List of halobias files
-    ##
-    ## Creating Folder Structure
-    # proj_dict  = directory_skeleton(param_dict, cu.cookiecutter_paths(__file__))
-    proj_dict  = directory_skeleton(param_dict, cu.cookiecutter_paths('./'))
+    param_dict = hb_files_extract(param_dict)
+    hb_files_arr = param_dict['hb_files_arr']
     ##
     ## Printing out project variables
     print('\n'+50*'='+'\n')
@@ -3059,45 +3065,54 @@ def main(args):
     param_dict = cosmo_create(param_dict)
     ## Survey Details
     param_dict = survey_specs(param_dict)
-    ## Halo mass function
-    param_dict = hmf_calc(param_dict['cosmo_model'], proj_dict, param_dict,
-        Mmin=6., Mmax=16.01, dlog10m=1.e-3, hmf_model=param_dict['hmf_model'])
-    ##
-    ## List of halobias files
-    param_dict = hb_files_extract(param_dict)
-    ##
-    ## Downloading files
-    param_dict = download_files(param_dict, proj_dict)
-    ##
-    ## Redshift and Comoving distance
-    param_dict = z_comoving_calc(param_dict, proj_dict)
-    ## Halobias Extras file - Modified Halobias file
-    param_dict = hb_file_construction_extras(param_dict, proj_dict)
-    ## Checking if final version of file exists
-    param_dict = clf_galprop_test(param_dict, proj_dict)
-    if not param_dict['clf_opt']:
-        ## Conditional Luminosity Function
-        clf_pd = clf_assignment(param_dict, proj_dict)
-        ## Distance from Satellites to Centrals
-        clf_pd = cen_sat_distance_calc(clf_pd, param_dict)
-        ## Finding closest magnitude value from ECO catalogue
-        clf_pd = mr_survey_matching(clf_pd, param_dict, proj_dict)
-    else:
-        clf_pd = param_dict['clf_pd']
-    ## Carving out geometry of Survey and carrying out the analysis
-    if (param_dict['survey'] == 'ECO'):
-        eco_geometry_mocks(clf_pd, param_dict, proj_dict)
-    elif (param_dict['survey'] == 'A'):
-        resolve_a_geometry_mocks(clf_pd, param_dict, proj_dict)
-    elif (param_dict['survey'] == 'B'):
-        resolve_b_geometry_mocks(clf_pd, param_dict, proj_dict)
-    ## Plotting different catalogues in simulation box
-    mockcatls_simbox_plot(param_dict, proj_dict)
-    ## Luminosity function for each catalogue
-    mocks_lum_function(param_dict, proj_dict)
-    ##
-    ## Saving everything to TARBALL
-    tarball_create(param_dict, proj_dict)
+    #
+    # Looping over different hb_files
+    for hb_ii, ii in enumerate(hb_files_arr):
+        #
+        # Copy of `param_dict`
+        param_dict_mod = param_dict.copy()
+        ##
+        ## Creating Folder Structure
+        # proj_dict  = directory_skeleton(param_dict, cu.cookiecutter_paths(__file__))
+        proj_dict  = directory_skeleton(
+            param_dict_mod, cu.cookiecutter_paths('./'), hb_ii)
+
+        ## Halo mass function
+        param_dict_mod = hmf_calc(param_dict_mod['cosmo_model'], proj_dict, param_dict_mod,
+            Mmin=6., Mmax=16.01, dlog10m=1.e-3, hmf_model=param_dict_mod['hmf_model'])
+        ##
+        ## Downloading files
+        param_dict_mod = download_files(param_dict_mod, proj_dict, hb_ii)
+        ##
+        ## Redshift and Comoving distance
+        param_dict_mod = z_comoving_calc(param_dict_mod, proj_dict)
+        ## Halobias Extras file - Modified Halobias file
+        param_dict_mod = hb_file_construction_extras(param_dict_mod, proj_dict)
+        ## Checking if final version of file exists
+        param_dict_mod = clf_galprop_test(param_dict_mod, proj_dict)
+        if not param_dict_mod['clf_opt']:
+            ## Conditional Luminosity Function
+            clf_pd = clf_assignment(param_dict_mod, proj_dict)
+            ## Distance from Satellites to Centrals
+            clf_pd = cen_sat_distance_calc(clf_pd, param_dict_mod)
+            ## Finding closest magnitude value from ECO catalogue
+            clf_pd = mr_survey_matching(clf_pd, param_dict_mod, proj_dict)
+        else:
+            clf_pd = param_dict_mod['clf_pd']
+        ## Carving out geometry of Survey and carrying out the analysis
+        if (param_dict_mod['survey'] == 'ECO'):
+            eco_geometry_mocks(clf_pd, param_dict_mod, proj_dict)
+        elif (param_dict_mod['survey'] == 'A'):
+            resolve_a_geometry_mocks(clf_pd, param_dict_mod, proj_dict)
+        elif (param_dict_mod['survey'] == 'B'):
+            resolve_b_geometry_mocks(clf_pd, param_dict_mod, proj_dict)
+        ## Plotting different catalogues in simulation box
+        mockcatls_simbox_plot(param_dict_mod, proj_dict)
+        ## Luminosity function for each catalogue
+        mocks_lum_function(param_dict_mod, proj_dict)
+        ##
+        ## Saving everything to TARBALL
+        tarball_create(param_dict_mod, proj_dict)
 
 # Main function
 if __name__=='__main__':

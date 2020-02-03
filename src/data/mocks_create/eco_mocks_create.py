@@ -2664,6 +2664,12 @@ def halos_rvir_calc(mockgal_pd, param_dict, catl_sim_eq=False):
     ------------
     mockgal_pd_new: pandas DataFrame
         Original info + Halo rvir
+
+    Note
+    -----------
+    2020-02-03:
+        - The new definition of `rvir` can be obtained from:
+            https://arxiv.org/pdf/1006.5394.pdf - Equation 6.
     """
     ## Constants
     Prog_msg = param_dict['Prog_msg']
@@ -2689,10 +2695,18 @@ def halos_rvir_calc(mockgal_pd, param_dict, catl_sim_eq=False):
     ## Halo masses
     haloid_mass = num.array([gal_pd.loc[gal_pd['haloid']==xx,'loghalom'].mean() for \
                         xx in haloid_arr])
-    ## Halo rvir - in Mpc/h
-    rvir_num = (10**(haloid_mass)*u.Msun) * G
-    rvir_den = 100 * H0**2 * (Om0 * (1.+haloid_z)**3 + Ode0)
-    rvir_q   = ((rvir_num / rvir_den)**(1./3)).to(u.Mpc)
+    ## Halo rvir - in Mpc/h - 1st version
+    # rvir_num = (10**(haloid_mass)*u.Msun) * G
+    # rvir_den = 100 * H0**2 * (Om0 * (1.+haloid_z)**3 + Ode0)
+    # rvir_q   = ((rvir_num / rvir_den)**(1./3)).to(u.Mpc)
+    # rvir     = rvir_q.value
+    ## Halo rvir - in Mpc/h - 2nd version
+    rho_crit = (3 * H0**2) / (8 * num.pi * G)
+    rho_mean = Om0 * rho_crit
+    delta_mean = 200
+    rvir_q_3 = ((10**(haloid_mass) * u.Msun) * 3)
+    rvir_q_3 /= 4. * num.pi * rho_mean * delta_mean
+    rvir_q   = (rvir_q_3**(1./3)).to(u.Mpc)
     rvir     = rvir_q.value
     ## Replacing with zero if necessary
     if catl_sim_eq:

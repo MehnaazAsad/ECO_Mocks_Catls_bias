@@ -1032,9 +1032,14 @@ def hb_file_construction_extras(param_dict, proj_dict):
         vx_arr  = cu.fast_food_reader('float' , ngal, hb)
         vy_arr  = cu.fast_food_reader('float' , ngal, hb)
         vz_arr  = cu.fast_food_reader('float' , ngal, hb)
-        halom   = cu.fast_food_reader('float' , ngal, hb)
-        cs_flag = cu.fast_food_reader('int'   , ngal, hb)
-        haloid  = cu.fast_food_reader('int'   , ngal, hb)
+        if 'Resolve_plk_5001' in os.path.basename(hb_local):
+            halom   = cu.fast_food_reader('float' , ngal, hb)
+            cs_flag = cu.fast_food_reader('int'   , ngal, hb)
+            haloid  = cu.fast_food_reader('int'   , ngal, hb)
+        else:
+            halom   = cu.fast_food_reader('double' , ngal, hb)
+            cs_flag = cu.fast_food_reader('int'   , ngal, hb)
+            haloid  = cu.fast_food_reader('long'   , ngal, hb)
     ##
     ## Counter of HaloIDs
     haloid_counts = Counter(haloid)

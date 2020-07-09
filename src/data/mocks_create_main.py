@@ -144,6 +144,20 @@ def get_parser():
                         help='Fraction of total number of CPUs to use',
                         type=float,
                         default=0.75)
+    
+    ## Option for whether halobias files are in local directory or need to be downloaded
+    parser.add_argument('-hb_local',
+                        dest='hb_local',
+                        help='Option for using local files or from the web',
+                        type=_str2bool,
+                        default=False)
+
+    ## Path to halobias files (only if hb_local = True)
+    parser.add_argument('-hb_path',
+                        dest='hb_path',
+                        help='Path to local halobias files if hb_local=True',
+                        type=str)
+
     ## Verbose
     parser.add_argument('-v','--verbose',
                         dest='verbose',
@@ -187,7 +201,9 @@ def get_analysis_params(param_dict):
                                  ('nmin'        ,'-nmin'    ,1       ),
                                  ('remove_files','-remove'  ,'False' ),
                                  ('verbose'     ,'-v'       ,'True'  ),
-                                 ('cpu_frac'    ,'-cpu'     ,0.75    )])
+                                 ('cpu_frac'    ,'-cpu'     ,0.75    ),
+                                 ('hb_local'    ,'-hb_local','False' ),
+                                 ('hb_path'     ,'-hb_path' ,None    )])
     ##
     ## Converting to pandas DataFrame
     colnames        = ['Name','Flag','Value']
@@ -219,6 +235,12 @@ def get_analysis_params(param_dict):
     ##
     ## Halo definition
     params_pd_data.loc[params_pd_data['Name']=='halotype','Value'] = param_dict['halotype']
+    ##
+    ## Halobias files local or on web
+    params_pd_data.loc[params_pd_data['Name']=='hb_local','Value'] = param_dict['hb_local']
+    ##
+    ## Halobias files path if hb_local=True
+    params_pd_data.loc[params_pd_data['Name']=='hb_path','Value'] = param_dict['hb_path']
 
     return params_pd_data
 

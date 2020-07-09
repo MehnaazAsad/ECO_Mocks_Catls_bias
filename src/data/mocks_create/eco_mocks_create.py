@@ -238,7 +238,7 @@ def get_parser():
     parser.add_argument('-hb_path',
                         dest='hb_path',
                         help='Path to local halobias files if hb_local=True',
-                        type='str')
+                        type=str)
 
     ## Program message
     parser.add_argument('-progmsg',

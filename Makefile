@@ -22,6 +22,9 @@ REMOVE_FILES = "False"
 COSMO_CHOICE="Planck"
 HALOTYPE="m200b"
 SURVEY="ECO"
+HB_LOCAL="False"
+HB_PATH="/fs1/masad/Research/Repositories/ECO_Mocks_Catls/data/raw/hb_files/m200b/ECO"
+
 
 ifeq (,$(shell which conda))
 HAS_CONDA=False
@@ -95,7 +98,7 @@ endif
 
 ## Create catalogues for `ECO` and/or RESOLVE `A`/`B`
 catl_mr_make:
-	@python $(SRC_DIR)/mocks_create_main.py -abopt mr -cpu $(CPU_FRAC) -remove $(REMOVE_FILES) -cosmo $(COSMO_CHOICE) -halotype $(HALOTYPE) -survey $(SURVEY)
+	@python $(SRC_DIR)/mocks_create_main.py -abopt mr -cpu $(CPU_FRAC) -remove $(REMOVE_FILES) -cosmo $(COSMO_CHOICE) -halotype $(HALOTYPE) -survey $(SURVEY) -hb_local $(HB_LOCAL) -hb_path $(HB_PATH)
 
 ## Delete existing `mock` catalogues
 delete_mock_catls:

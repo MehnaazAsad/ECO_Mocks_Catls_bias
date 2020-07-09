@@ -226,6 +226,20 @@ def get_parser():
                         already""",
                         type=_str2bool,
                         default=False)
+    
+    ## Option for whether halobias files are in local directory or need to be downloaded
+    parser.add_argument('-hb_local',
+                        dest='hb_local',
+                        help='Option for using local files or from the web',
+                        type=_str2bool,
+                        default=False)
+
+    ## Path to halobias files (only if hb_local = True)
+    parser.add_argument('-hb_path',
+                        dest='hb_path',
+                        help='Path to local halobias files if hb_local=True',
+                        type='str')
+
     ## Program message
     parser.add_argument('-progmsg',
                         dest='Prog_msg',
@@ -300,8 +314,9 @@ def add_to_dict(param_dict):
     choice_survey = 2
     ###
     ### URL to download catalogues
-    url_catl = 'http://lss.phy.vanderbilt.edu/groups/data_eco_vc/'
-    url_checker(url_catl)
+    if not hb_local:
+    	url_catl = 'http://lss.phy.vanderbilt.edu/groups/data_eco_vc/'
+    	url_checker(url_catl)
     ##
     ## Plotting constants
     plot_dict = plot_const()
@@ -728,25 +743,31 @@ def hb_files_extract(param_dict, ext='ff'):
     Taken from
     `https://stackoverflow.com/questions/11023530/python-to-list-http-files-and-directories <https://stackoverflow.com/questions/11023530/python-to-list-http-files-and-directories>`_
     """
-    # Main URL
-    hb_url_web = os.path.join(param_dict['url_catl'],
-                                'HB_files',
-                                param_dict['halotype'] + '/')
-    # Connecting to `url_catl`
-    response = requests.get(hb_url_web)
-    # Checking if connection was successful
-    if response.ok:
-        response_text = response.text
+    if hb_local:
+        path_to_hb_files = param_dict['hb_path']
+        hb_files_arr = glob.glob(path_to_hb_files + '/*')
+        param_dict['hb_files_arr'] = hb_files_arr
+    
     else:
-        return response.raise_for_status()
-    # Parsing HTML
-    soup = BeautifulSoup(response_text, 'html.parser')
-    # Getting list of files
-    hb_files_arr = [hb_url_web + node.get('href') for node in soup.find_all('a')
-        if node.get('href').endswith(ext)]
-    #
-    # Saving to `param_dict`
-    param_dict['hb_files_arr'] = hb_files_arr
+        # Main URL
+        hb_url_web = os.path.join(param_dict['url_catl'],
+                                    'HB_files',
+                                    param_dict['halotype'] + '/')
+        # Connecting to `url_catl`
+        response = requests.get(hb_url_web)
+        # Checking if connection was successful
+        if response.ok:
+            response_text = response.text
+        else:
+            return response.raise_for_status()
+        # Parsing HTML
+        soup = BeautifulSoup(response_text, 'html.parser')
+        # Getting list of files
+        hb_files_arr = [hb_url_web + node.get('href') for node in soup.find_all('a')
+            if node.get('href').endswith(ext)]
+        #
+        # Saving to `param_dict`
+        param_dict['hb_files_arr'] = hb_files_arr
 
     return param_dict
 

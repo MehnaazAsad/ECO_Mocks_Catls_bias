@@ -24,6 +24,7 @@ import src.data.utilities_python as cu
 import numpy as num
 import os
 import sys
+import glob
 import pandas as pd
 import matplotlib
 matplotlib.use( 'Agg' )
@@ -314,9 +315,10 @@ def add_to_dict(param_dict):
     choice_survey = 2
     ###
     ### URL to download catalogues
-    if not hb_local:
-    	url_catl = 'http://lss.phy.vanderbilt.edu/groups/data_eco_vc/'
-    	url_checker(url_catl)
+    if not param_dict['hb_local']:
+        url_catl = 'http://lss.phy.vanderbilt.edu/groups/data_eco_vc/'
+        url_checker(url_catl)
+        param_dict['url_catl'] = url_catl
     ##
     ## Plotting constants
     plot_dict = plot_const()
@@ -337,7 +339,7 @@ def add_to_dict(param_dict):
     ## Adding to `param_dict`
     param_dict['cens'         ] = cens
     param_dict['sats'         ] = sats
-    param_dict['url_catl'     ] = url_catl
+    #param_dict['url_catl'     ] = url_catl MOVED ABOVE
     param_dict['hod_dict'     ] = hod_dict
     param_dict['choice_survey'] = choice_survey
     param_dict['plot_dict'    ] = plot_dict
@@ -743,7 +745,7 @@ def hb_files_extract(param_dict, ext='ff'):
     Taken from
     `https://stackoverflow.com/questions/11023530/python-to-list-http-files-and-directories <https://stackoverflow.com/questions/11023530/python-to-list-http-files-and-directories>`_
     """
-    if hb_local:
+    if param_dict['hb_local']:
         path_to_hb_files = param_dict['hb_path']
         hb_files_arr = glob.glob(path_to_hb_files + '/*')
         param_dict['hb_files_arr'] = hb_files_arr
@@ -794,12 +796,19 @@ def download_files(param_dict, proj_dict, hb_ii):
         just downloaded
     """
     ## Main ECO files directory - Web
-    resolve_web_dir = os.path.join( param_dict['url_catl'],
-                                    'RESOLVE',
-                                    'resolve_files')
-    eco_web_dir     = os.path.join( param_dict['url_catl'],
-                                    'ECO',
-                                    'eco_files')
+    if not param_dict['hb_local']:
+        resolve_web_dir = os.path.join( param_dict['url_catl'],
+                                        'RESOLVE',
+                                        'resolve_files')
+        eco_web_dir     = os.path.join( param_dict['url_catl'],
+                                        'ECO',
+                                        'eco_files')
+
+    ## Dummy directories since if statement below won't be executed
+    else:
+        resolve_web_dir = proj_dict['data_dir'] 
+        eco_web_dir = proj_dict['data_dir']   
+
     ## ECO - MHI Predictions
     mhi_file_local = os.path.join(  proj_dict['phot_dir'],
                                     'eco_mhi_prediction.txt')

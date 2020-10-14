@@ -747,7 +747,7 @@ def hb_files_extract(param_dict, ext='ff'):
     """
     if param_dict['hb_local']:
         path_to_hb_files = param_dict['hb_path']
-        hb_files_arr = glob.glob(path_to_hb_files + '/*')
+        hb_files_arr = glob.glob(path_to_hb_files + '/*_fiducial_outfile.ff')
         param_dict['hb_files_arr'] = hb_files_arr
     
     else:
@@ -2664,8 +2664,8 @@ def catl_drop_cols(mockgal_pd):
     ## Copies of DataFrames
     gal_pd   = mockgal_pd.copy()
     ## Columns
-    gal_cols = ['x','y','z','vx','vy','vz','galid','x_orig','y_orig','z_orig',
-                'idx','vel_pec','ra_orig']
+    gal_cols = ['galid','x_orig','y_orig','z_orig',
+                'idx','vel_pec','ra_orig'] # Modified from original to not remove cart pos and vels
     # New object `without` these columns
     gal_pd_mod = gal_pd.loc[:,~gal_pd.columns.isin(gal_cols)].copy()
 

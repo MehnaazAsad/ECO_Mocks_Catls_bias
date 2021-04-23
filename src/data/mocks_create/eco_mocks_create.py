@@ -749,7 +749,7 @@ def hb_files_extract(param_dict, ext='ff'):
         path_to_hb_files = param_dict['hb_path']
 	# hb_files_arr = glob.glob(path_to_hb_files + '/*')
         #hb_files_arr = glob.glob(path_to_hb_files + '/5001_{0}_dg*'.format(param_dict['halotype']))
-        hb_files_arr = glob.glob(path_to_hb_files + '1_5001.ff')
+        hb_files_arr = glob.glob(path_to_hb_files + '/1_5001.ff')
         param_dict['hb_files_arr'] = hb_files_arr
     
     else:

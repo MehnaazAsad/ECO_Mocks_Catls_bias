@@ -304,7 +304,7 @@ def add_to_dict(param_dict):
     sats = int(0)
     ## HOD Parameters
     hod_dict             = {}
-    hod_dict['logMmin' ] = 11.4
+    hod_dict['logMmin' ] = 10.81#11.4
     hod_dict['sigLogM' ] = 0.2
     hod_dict['logM0'   ] = 10.8
     hod_dict['logM1'   ] = 12.8
@@ -749,7 +749,7 @@ def hb_files_extract(param_dict, ext='ff'):
         path_to_hb_files = param_dict['hb_path']
 	# hb_files_arr = glob.glob(path_to_hb_files + '/*')
         #hb_files_arr = glob.glob(path_to_hb_files + '/5001_{0}_dg*'.format(param_dict['halotype']))
-        hb_files_arr = glob.glob(path_to_hb_files + '/5001_{0}_seed1*'.format(param_dict['halotype']))
+        hb_files_arr = glob.glob(path_to_hb_files + '/5001_{0}_seed5001*'.format(param_dict['halotype']))
         param_dict['hb_files_arr'] = hb_files_arr
     
     else:

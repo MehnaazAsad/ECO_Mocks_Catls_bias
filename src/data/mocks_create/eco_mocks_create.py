@@ -25,6 +25,7 @@ import numpy as num
 import os
 import sys
 import glob
+import itertools
 import pandas as pd
 import matplotlib
 matplotlib.use( 'Agg' )
@@ -752,9 +753,21 @@ def hb_files_extract(param_dict, ext='ff'):
     """
     if param_dict['hb_local']:
         path_to_hb_files = param_dict['hb_path']
+        
+        hb_files_arr = []
+        keywords = ['dg', 'fiducial']
+        for key in keywords: 
+            hb_files_arr.append(glob.glob(path_to_hb_files + '/5001_{0}_{1}*.ff'.format(param_dict['halotype'], key))) 
+	hb_files_arr = list(itertools.chain(*hb_files_arr))
+
+        ## Originally the first line worked because the folder only contained hb_files for Ella but now that the folder is shared 
+        ## between Zack and Ella, there needs to be another way to differentiate which halobias files are read. Note: the first
+        ## line below was run first and the second added later on when mocks with spatial bias were required for Ella
 	# hb_files_arr = glob.glob(path_to_hb_files + '/*')
         #hb_files_arr = glob.glob(path_to_hb_files + '/5001_{0}_dg*'.format(param_dict['halotype']))
-        hb_files_arr = glob.glob(path_to_hb_files + '/5001_{0}_seedminus1*'.format(param_dict['halotype']))
+        
+        ## Testing to see if the seed was the cause of the differences in numbers between Victor's version of the catalogs and mine 
+        #hb_files_arr = glob.glob(path_to_hb_files + '/5001_{0}_seedminus1*'.format(param_dict['halotype']))
         param_dict['hb_files_arr'] = hb_files_arr
     
     else:

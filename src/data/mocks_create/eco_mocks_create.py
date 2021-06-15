@@ -711,6 +711,7 @@ def hmf_calc(cosmo_model, proj_dict, param_dict, Mmin=10, Mmax=16,
         mass_func = hmf.MassFunction(Mmin=Mmin, Mmax=Mmax, dlog10m=dlog10m,
             cosmo_model=cosmo_model, hmf_model=hmf_choice_fit)
     elif hmf_model == 'tinker08':
+        print("Tinker 2008 hmf model used")
         mass_func = hmf.MassFunction(Mmin=Mmin, Mmax=Mmax, dlog10m=dlog10m, 
             cosmo_model=cosmo_model, hmf_model=hmf_choice_fit, 
             mdef_model='SOMean', mdef_params={"overdensity":337})
@@ -2756,6 +2757,7 @@ def halos_rvir_calc(mockgal_pd, param_dict, catl_sim_eq=False):
     if param_dict['halotype'] == 'm200b':
         delta_mean = 200
     elif param_dict['halotype'] == 'mvir':
+        print("Using 337 for virial definition")
         delta_mean = 337
     rvir_q_3 = ((10**(haloid_mass) * u.Msun) * 3)
     rvir_q_3 /= 4. * num.pi * rho_mean * delta_mean

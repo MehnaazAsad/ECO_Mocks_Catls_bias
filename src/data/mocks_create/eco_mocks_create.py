@@ -25,6 +25,7 @@ import numpy as num
 import os
 import sys
 import glob
+import itertools
 import pandas as pd
 import matplotlib
 matplotlib.use( 'Agg' )

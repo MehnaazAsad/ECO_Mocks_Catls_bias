@@ -752,7 +752,17 @@ def hb_files_extract(param_dict, ext='ff'):
     """
     if param_dict['hb_local']:
         path_to_hb_files = param_dict['hb_path']
-        hb_files_arr = glob.glob(path_to_hb_files + '/*')
+        
+        hb_files_arr = []
+        keywords = ['dv', 'fiducial', 'center']
+        for key in keywords: 
+            hb_files_arr.append(glob.glob(path_to_hb_files + '/5001_{0}_{1}*.ff'.format(param_dict['halotype'], key))) 
+	hb_files_arr = list(itertools.chain(*hb_files_arr))
+
+        ## Originally this line worked because the folder only contained hb_files for Zack but now that the folder is shared 
+        ## between Zack and Ella, there needs to be another way to differentiate which halobias files are read.
+        #hb_files_arr = glob.glob(path_to_hb_files + '/*')
+        
         param_dict['hb_files_arr'] = hb_files_arr
     
     else:
